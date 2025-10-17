@@ -1,20 +1,33 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { pool } from "./db.js";
-import healthRoutes from "./routes/health.js";
-
-dotenv.config();
+const express = require('express');
+const { Pool } = require('pg');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
-app.use("/api/health", healthRoutes);
-
-app.get("/", (req, res) => {
-  res.send("SaaS Internet Billing API is live 🚀");
+// PostgreSQL configuration (from Docker environment variables)
+const pool = new Pool({
+  user: process.env.POSTGRES_USER || 'postgres',
+  host: process.env.POSTGRES_HOST || 'wifi_postgres',
+  database: process.env.POSTGRES_DB || 'wifi_billing',
+  password: process.env.POSTGRES_PASSWORD || 'postgres',
+  port: process.env.POSTGRES_PORT || 5432,
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+// Simple route to test DB connection
+app.get('/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ status: 'OK', time: result.rows[0].now });
+  } catch (err) {
+    res.status(500).json({ status: 'ERROR', error: err.message });
+  }
+});
+
+// Basic hello route
+app.get('/', (req, res) => {
+  res.send('Backend is running!');
+});
+
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
+});
