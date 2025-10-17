@@ -1,0 +1,72 @@
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 5000
+CMD ["node", "src/server.js"]
+
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: wifi_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: wifi_user
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: wifi_billing
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build: ./backend
+    container_name: wifi_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=wifi_user
+      - DB_PASS=password123
+      - DB_NAME=wifi_billing
+    depends_on:
+      - db
+version: "3.8"
+
+services:
+  # 🗄️ Database Service (PostgreSQL)
+  db:
+    image: postgres:15                     # Use official PostgreSQL version 15 image
+    container_name: wifi_postgres          # Name of the database container
+    restart: always                        # Restart automatically if container stops
+    environment:
+      POSTGRES_USER: wifi_user             # Username for the DB
+      POSTGRES_PASSWORD: password123       # Password for the DB
+      POSTGRES_DB: wifi_billing            # Database name
+    ports:
+      - "5432:5432"                        # Map host port 5432 -> container 5432
+    volumes:
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # The above line tells Docker:
+      # "When starting the DB for the first time, run this SQL file to set up tables"
+
+  # ⚙️ Backend Service (Node.js + Express)
+  backend:
+    build: ./backend                       # Build backend using the Dockerfile in /backend
+    container_name: wifi_backend           # Name of the backend container
+    restart: always                        # Auto-restart if the backend crashes
+    ports:
+      - "5000:5000"                        # Expose backend port 5000 to host
+    environment:
+      - DB_HOST=db                         # Tell backend where to find the database
+      - DB_PORT=5432
+      - DB_USER=wifi_user
+      - DB_PASS=password123
+      - DB_NAME=wifi_billing
+    depends_on:
+      - db                                 # Wait for the DB to be ready before backend starts
