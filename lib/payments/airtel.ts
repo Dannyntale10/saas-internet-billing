@@ -21,10 +21,15 @@ export class AirtelMoney {
   private environment: string
   private baseUrl: string
 
+  private merchantCode: string
+  private applicationName: string
+
   constructor() {
     this.apiKey = process.env.AIRTEL_API_KEY || ''
     this.apiSecret = process.env.AIRTEL_API_SECRET || ''
     this.environment = process.env.AIRTEL_ENVIRONMENT || 'sandbox'
+    this.merchantCode = process.env.AIRTEL_MERCHANT_CODE || '7WTV89LD'
+    this.applicationName = process.env.AIRTEL_APPLICATION_NAME || 'jenda_mobility'
     this.baseUrl = this.environment === 'production'
       ? 'https://openapiuat.airtel.africa'
       : 'https://openapiuat.airtel.africa' // Airtel sandbox URL
@@ -80,6 +85,8 @@ export class AirtelMoney {
             'Content-Type': 'application/json',
             'X-Country': 'UG',
             'X-Currency': 'UGX',
+            'X-Merchant-Code': this.merchantCode,
+            'X-Application-Name': this.applicationName,
           }
         }
       )
