@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MTNMobileMoney } from '@/lib/payments/mtn'
 import { AirtelMoney } from '@/lib/payments/airtel'
+import { PaymentStatus } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Update payment status based on response
-        let newStatus = payment.status
+        let newStatus: PaymentStatus = payment.status
         if (statusResponse.status === 'SUCCESSFUL' || statusResponse.status === 'COMPLETED') {
           newStatus = 'COMPLETED'
           
