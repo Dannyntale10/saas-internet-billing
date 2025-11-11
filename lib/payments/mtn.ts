@@ -33,9 +33,8 @@ export class MTNMobileMoney {
   private baseUrl: string
 
   constructor() {
-    // MTN uses Consumer Key and Consumer Secret
-    this.apiKey = process.env.MTN_CONSUMER_KEY || process.env.MTN_API_KEY || ''
-    this.apiSecret = process.env.MTN_CONSUMER_SECRET || process.env.MTN_API_SECRET || ''
+    this.apiKey = process.env.MTN_API_KEY || ''
+    this.apiSecret = process.env.MTN_API_SECRET || ''
     this.environment = process.env.MTN_ENVIRONMENT || 'sandbox'
     this.baseUrl = this.environment === 'production' 
       ? 'https://api.mtn.com/v1' 

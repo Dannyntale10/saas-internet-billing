@@ -5,40 +5,90 @@
 
 const { execSync } = require('child_process')
 
-const credentials = {
-  MTN_CONSUMER_KEY: 'Vrg0XXXXXXXXXXXXXXXXXXXXXXXXXFc5', // Replace with actual key
-  MTN_CONSUMER_SECRET: 'OMjmXXXXXXXXPOyJ', // Replace with actual secret
-  MTN_ENVIRONMENT: 'sandbox', // or 'production'
-}
-
-console.log('🔐 Adding MTN API credentials to Vercel...\n')
-
-// Add to all environments
-const environments = ['production', 'preview', 'development']
-
-environments.forEach(env => {
-  console.log(`Adding to ${env} environment...`)
-  
-  Object.entries(credentials).forEach(([key, value]) => {
-    try {
-      // Use echo to pipe value to vercel env add
-      const command = `(echo "${value}") | vercel env add ${key} ${env}`
-      execSync(command, { 
-        stdio: 'inherit',
-        shell: true 
-      })
-      console.log(`  ✅ ${key} added to ${env}`)
-    } catch (error) {
-      console.error(`  ❌ Failed to add ${key} to ${env}:`, error.message)
-    }
-  })
-  
-  console.log()
+// Get credentials from user input or environment
+const readline = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 })
 
-console.log('✅ Done! Credentials added to Vercel.')
-console.log('\n📝 Next steps:')
-console.log('1. Replace the placeholder values with your actual credentials')
-console.log('2. Run this script again, or add manually via Vercel dashboard')
-console.log('3. Redeploy your application')
+function question(query) {
+  return new Promise(resolve => readline.question(query, resolve))
+}
+
+async function addMTNCredentials() {
+  console.log('🔐 MTN API Credentials Setup\n')
+  console.log('Please enter your MTN API credentials from the MTN Developer Portal:\n')
+
+  // Get credentials
+  const apiKey = await question('MTN Consumer Key (API Key): ')
+  const apiSecret = await question('MTN Consumer Secret (API Secret): ')
+  const environment = await question('Environment (sandbox/production) [sandbox]: ') || 'sandbox'
+
+  if (!apiKey || !apiSecret) {
+    console.error('❌ Error: Both API Key and Secret are required')
+    process.exit(1)
+  }
+
+  console.log('\n📤 Adding credentials to Vercel...\n')
+
+  const environments = ['production', 'preview', 'development']
+
+  try {
+    // Add MTN_API_KEY
+    console.log('Adding MTN_API_KEY...')
+    for (const env of environments) {
+      try {
+        execSync(
+          `echo "${apiKey}" | vercel env add MTN_API_KEY ${env}`,
+          { stdio: 'inherit' }
+        )
+        console.log(`  ✅ Added to ${env}`)
+      } catch (error) {
+        console.log(`  ⚠️  ${env}: ${error.message}`)
+      }
+    }
+
+    // Add MTN_API_SECRET
+    console.log('\nAdding MTN_API_SECRET...')
+    for (const env of environments) {
+      try {
+        execSync(
+          `echo "${apiSecret}" | vercel env add MTN_API_SECRET ${env}`,
+          { stdio: 'inherit' }
+        )
+        console.log(`  ✅ Added to ${env}`)
+      } catch (error) {
+        console.log(`  ⚠️  ${env}: ${error.message}`)
+      }
+    }
+
+    // Add MTN_ENVIRONMENT
+    console.log('\nAdding MTN_ENVIRONMENT...')
+    for (const env of environments) {
+      try {
+        execSync(
+          `echo "${environment}" | vercel env add MTN_ENVIRONMENT ${env}`,
+          { stdio: 'inherit' }
+        )
+        console.log(`  ✅ Added to ${env}`)
+      } catch (error) {
+        console.log(`  ⚠️  ${env}: ${error.message}`)
+      }
+    }
+
+    console.log('\n✅ All MTN credentials added successfully!')
+    console.log('\n📝 Next steps:')
+    console.log('   1. Redeploy your app: vercel --prod')
+    console.log('   2. Test payments at: /admin/test-payments')
+    console.log('   3. Use sandbox test numbers for testing')
+
+  } catch (error) {
+    console.error('❌ Error:', error.message)
+    process.exit(1)
+  } finally {
+    readline.close()
+  }
+}
+
+addMTNCredentials()
 
