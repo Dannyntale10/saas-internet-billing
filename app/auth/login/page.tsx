@@ -1,17 +1,32 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const role = session.user.role
+      if (role === 'ADMIN') {
+        router.push('/admin/dashboard')
+      } else if (role === 'CLIENT') {
+        router.push('/client/dashboard')
+      } else {
+        router.push('/user/dashboard')
+      }
+    }
+  }, [status, session, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,28 +38,38 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
+        callbackUrl: '/',
       })
+
+      console.log('SignIn result:', result)
 
       if (result?.error) {
         console.error('Login error:', result.error)
         // More specific error messages
         if (result.error === 'CredentialsSignin') {
           setError('Invalid email or password. Please check your credentials and try again.')
+        } else if (result.error.includes('fetch')) {
+          setError('Network error. Please check your connection and try again.')
         } else {
           setError(`Login failed: ${result.error}. Please try again or contact support.`)
         }
+        setLoading(false)
       } else if (result?.ok) {
-        // Successful login - redirect based on role
-        console.log('Login successful, redirecting...')
+        // Successful login - wait a bit for session to be set, then redirect
+        console.log('Login successful, waiting for session...')
+        
+        // Wait for session to be available
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         // Force a hard redirect to ensure session is loaded
         window.location.href = '/'
       } else {
         setError('Login failed. Please try again.')
+        setLoading(false)
       }
     } catch (err: any) {
       console.error('Login exception:', err)
       setError(`An error occurred: ${err.message || 'Please try again.'}`)
-    } finally {
       setLoading(false)
     }
   }

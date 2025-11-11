@@ -61,14 +61,18 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.role = user.role
         token.parentClientId = user.parentClientId
+        token.email = user.email
+        token.name = user.name
       }
       return token
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.parentClientId = token.parentClientId as string | null
+        session.user.email = (token.email as string) || session.user.email
+        session.user.name = (token.name as string) || session.user.name
       }
       return session
     }
@@ -78,7 +82,9 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 }
 
