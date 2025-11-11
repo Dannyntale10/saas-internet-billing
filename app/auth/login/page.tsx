@@ -26,13 +26,23 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
-      } else {
+        console.error('Login error:', result.error)
+        // More specific error messages
+        if (result.error === 'CredentialsSignin') {
+          setError('Invalid email or password. Please check your credentials and try again.')
+        } else {
+          setError(`Login failed: ${result.error}. Please try again or contact support.`)
+        }
+      } else if (result?.ok) {
+        // Successful login
         router.push('/')
         router.refresh()
+      } else {
+        setError('Login failed. Please try again.')
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.')
+    } catch (err: any) {
+      console.error('Login exception:', err)
+      setError(`An error occurred: ${err.message || 'Please try again.'}`)
     } finally {
       setLoading(false)
     }

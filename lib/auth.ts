@@ -12,30 +12,45 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error('Missing credentials')
+            return null
+          }
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          })
+
+          if (!user) {
+            console.error(`User not found: ${credentials.email}`)
+            return null
+          }
+
+          if (!user.isActive) {
+            console.error(`User account is inactive: ${credentials.email}`)
+            return null
+          }
+
+          const isValid = await bcrypt.compare(credentials.password, user.password)
+
+          if (!isValid) {
+            console.error(`Invalid password for: ${credentials.email}`)
+            return null
+          }
+
+          console.log(`Successful login: ${user.email} (${user.role})`)
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            parentClientId: user.parentClientId,
+          }
+        } catch (error) {
+          console.error('Authorization error:', error)
           return null
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
-
-        if (!user || !user.isActive) {
-          return null
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          parentClientId: user.parentClientId,
         }
       }
     })
