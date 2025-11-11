@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
 
     // Initiate mobile money payment
     try {
-      let paymentResponse
+      let paymentResponse: any
+      let providerTransactionId: string = transactionId
       
       if (data.method === 'MTN_MOBILE_MONEY') {
         const mtn = new MTNMobileMoney()
@@ -87,6 +88,8 @@ export async function POST(req: NextRequest) {
           `Payment for voucher ${voucher.code}`,
           'Internet voucher purchase'
         )
+        // MTN returns financialTransactionId
+        providerTransactionId = paymentResponse.financialTransactionId || transactionId
       } else {
         const airtel = new AirtelMoney()
         paymentResponse = await airtel.requestPayment(
@@ -95,20 +98,22 @@ export async function POST(req: NextRequest) {
           `VOUCHER-${voucher.code}`,
           transactionId
         )
+        // Airtel returns transactionId
+        providerTransactionId = paymentResponse.transactionId || transactionId
       }
 
       // Update payment with transaction details
       await prisma.payment.update({
         where: { id: payment.id },
         data: {
-          transactionId: paymentResponse.transactionId || transactionId,
+          transactionId: providerTransactionId,
         }
       })
 
       return NextResponse.json({
         success: true,
         paymentId: payment.id,
-        transactionId: paymentResponse.transactionId || transactionId,
+        transactionId: providerTransactionId,
         message: 'Payment request initiated. Please approve on your phone.',
       })
     } catch (error: any) {
