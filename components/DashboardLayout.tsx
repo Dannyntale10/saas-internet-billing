@@ -30,6 +30,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const adminNav: NavItem[] = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Clients', href: '/admin/clients', icon: Users },
+    { name: 'Test Payments', href: '/admin/test-payments', icon: CreditCard },
     { name: 'Monitoring', href: '/admin/monitoring', icon: Activity },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ]
@@ -41,6 +42,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: 'Payments', href: '/client/payments', icon: CreditCard },
     { name: 'Monitoring', href: '/client/monitoring', icon: Activity },
     { name: 'Router Config', href: '/client/router', icon: Router },
+    { name: 'Test Router', href: '/client/test-router', icon: Router },
     { name: 'Settings', href: '/client/settings', icon: Settings },
   ]
 
