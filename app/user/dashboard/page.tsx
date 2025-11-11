@@ -56,8 +56,8 @@ export default async function UserDashboard() {
             <Link href="/user/buy-voucher">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-indigo-100 rounded-md p-3">
-                    <ShoppingCart className="h-6 w-6 text-indigo-600" />
+                  <div className="flex-shrink-0 bg-brand-green/10 rounded-md p-3">
+                    <ShoppingCart className="h-6 w-6 text-brand-green" />
                   </div>
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500">Buy Voucher</p>
@@ -71,8 +71,8 @@ export default async function UserDashboard() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
-                  <Ticket className="h-6 w-6 text-green-600" />
+                <div className="flex-shrink-0 bg-brand-green/10 rounded-md p-3">
+                  <Ticket className="h-6 w-6 text-brand-green" />
                 </div>
                 <div className="ml-5">
                   <p className="text-sm font-medium text-gray-500">My Vouchers</p>

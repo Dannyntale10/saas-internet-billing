@@ -122,8 +122,8 @@ export default async function AdminDashboard() {
                     <li key={client.id} className="py-4">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <Users className="h-5 w-5 text-indigo-600" />
+                          <div className="h-10 w-10 rounded-full bg-brand-green/10 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-brand-green" />
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -165,7 +165,7 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t">
                   <span className="text-sm font-medium text-gray-900">Total Revenue</span>
-                  <span className="text-sm font-bold text-indigo-600">
+                  <span className="text-sm font-bold text-brand-green">
                     UGX {revenue.toLocaleString()}
                   </span>
                 </div>

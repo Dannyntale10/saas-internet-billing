@@ -6,7 +6,7 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Internet Billing System - SaaS Platform',
+  title: 'JENDA MOBILITY - Internet Billing System',
   description: 'Multi-tenant SaaS platform for internet service providers',
 }
 

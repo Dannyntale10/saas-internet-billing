@@ -173,10 +173,10 @@ export default async function ClientDashboard() {
               <div className="space-y-3">
                 <a
                   href="/client/vouchers/create"
-                  className="block w-full text-left px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="block w-full text-left px-4 py-3 border border-gray-300 rounded-md hover:bg-brand-green/5 hover:border-brand-green transition-colors"
                 >
                   <div className="flex items-center">
-                    <Ticket className="h-5 w-5 text-indigo-600 mr-3" />
+                    <Ticket className="h-5 w-5 text-brand-green mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Create Voucher</p>
                       <p className="text-xs text-gray-500">Generate new internet vouchers</p>
@@ -185,10 +185,10 @@ export default async function ClientDashboard() {
                 </a>
                 <a
                   href="/client/users"
-                  className="block w-full text-left px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="block w-full text-left px-4 py-3 border border-gray-300 rounded-md hover:bg-brand-green/5 hover:border-brand-green transition-colors"
                 >
                   <div className="flex items-center">
-                    <Users className="h-5 w-5 text-indigo-600 mr-3" />
+                    <Users className="h-5 w-5 text-brand-green mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Manage Users</p>
                       <p className="text-xs text-gray-500">View and manage end users</p>
@@ -197,10 +197,10 @@ export default async function ClientDashboard() {
                 </a>
                 <a
                   href="/client/router"
-                  className="block w-full text-left px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="block w-full text-left px-4 py-3 border border-gray-300 rounded-md hover:bg-brand-green/5 hover:border-brand-green transition-colors"
                 >
                   <div className="flex items-center">
-                    <Activity className="h-5 w-5 text-indigo-600 mr-3" />
+                    <Activity className="h-5 w-5 text-brand-green mr-3" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Router Config</p>
                       <p className="text-xs text-gray-500">Configure router settings</p>

@@ -1,3 +1,5 @@
+import Logo from '@/components/Logo'
+
 export default function SetupCheck() {
   const requiredVars = [
     'DATABASE_URL',
@@ -10,13 +12,17 @@ export default function SetupCheck() {
   )
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-2xl w-full bg-white shadow-lg rounded-lg p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Setup Check</h1>
+    <div className="min-h-screen flex items-center justify-center bg-brand-gradient px-4">
+      <div className="max-w-2xl w-full bg-white shadow-2xl rounded-lg p-8">
+        <div className="flex justify-center mb-6">
+          <Logo size="md" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">Setup Check</h1>
         
         {missingVars.length === 0 ? (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <p className="text-green-800 font-medium">✅ All required environment variables are set!</p>
+          <div className="bg-brand-green/10 border-2 border-brand-green rounded-md p-4">
+            <p className="text-brand-green font-medium text-center text-lg">✅ All required environment variables are set!</p>
+            <p className="text-gray-600 text-center mt-2 text-sm">Your JENDA MOBILITY app is ready to use!</p>
           </div>
         ) : (
           <div className="space-y-4">
