@@ -23,10 +23,12 @@ export default async function Home() {
     } else {
       redirect('/user/dashboard')
     }
-  } catch (error) {
+  } catch (error: any) {
     // If there's an error (likely database connection), redirect to setup check
-    console.error('Home page error:', error)
-    redirect('/setup-check')
+    console.error('Home page error:', error?.message || error)
+    // Don't redirect on error - let error boundary handle it
+    // This prevents redirect loops
+    throw error
   }
 }
 
