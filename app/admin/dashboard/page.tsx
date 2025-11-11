@@ -9,8 +9,17 @@ import { Users, Ticket, CreditCard, TrendingUp } from 'lucide-react'
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions)
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session) {
     redirect('/auth/login')
+  }
+
+  if (session.user.role !== 'ADMIN') {
+    // Redirect based on actual role
+    if (session.user.role === 'CLIENT') {
+      redirect('/client/dashboard')
+    } else {
+      redirect('/user/dashboard')
+    }
   }
 
   // Get statistics

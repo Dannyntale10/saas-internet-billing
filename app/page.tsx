@@ -11,24 +11,25 @@ export default async function Home() {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session) {
+    if (!session || !session.user) {
       redirect('/auth/login')
     }
 
     // Redirect based on role
-    if (session.user.role === 'ADMIN') {
+    const role = session.user.role
+    
+    if (role === 'ADMIN') {
       redirect('/admin/dashboard')
-    } else if (session.user.role === 'CLIENT') {
+    } else if (role === 'CLIENT') {
       redirect('/client/dashboard')
     } else {
       redirect('/user/dashboard')
     }
-  } catch (error: any) {
+  } catch (error) {
     // If there's an error (likely database connection), redirect to setup check
-    console.error('Home page error:', error?.message || error)
-    // Don't redirect on error - let error boundary handle it
-    // This prevents redirect loops
-    throw error
+    console.error('Home page error:', error)
+    // Don't redirect to setup-check if user is logged in - redirect to login instead
+    redirect('/auth/login')
   }
 }
 

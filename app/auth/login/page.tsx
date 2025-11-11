@@ -34,9 +34,10 @@ export default function LoginPage() {
           setError(`Login failed: ${result.error}. Please try again or contact support.`)
         }
       } else if (result?.ok) {
-        // Successful login
-        router.push('/')
-        router.refresh()
+        // Successful login - redirect based on role
+        console.log('Login successful, redirecting...')
+        // Force a hard redirect to ensure session is loaded
+        window.location.href = '/'
       } else {
         setError('Login failed. Please try again.')
       }
