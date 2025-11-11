@@ -48,8 +48,10 @@ export default function LoginPage() {
         // More specific error messages
         if (result.error === 'CredentialsSignin') {
           setError('Invalid email or password. Please check your credentials and try again.')
-        } else if (result.error.includes('fetch')) {
-          setError('Network error. Please check your connection and try again.')
+        } else if (result.error.includes('fetch') || result.error.includes('GET is not supported')) {
+          setError('Authentication service error. Please check that NEXTAUTH_URL is correctly configured in Vercel settings.')
+        } else if (result.error.includes('GET is not supported')) {
+          setError('Configuration error: Please ensure NEXTAUTH_URL matches your deployment URL in Vercel environment variables.')
         } else {
           setError(`Login failed: ${result.error}. Please try again or contact support.`)
         }
