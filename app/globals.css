@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* JENDA MOBILITY Brand Colors - Modern 2025 Palette */
+    --background: 0 0% 100%;
+    --foreground: 220 30% 15%;
+    
+    /* Primary - Dark Navy Blue (from logo background) */
+    --primary: 220 50% 20%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Light Green (from logo J) */
+    --secondary: 142 76% 60%;
+    --secondary-foreground: 220 50% 20%;
+    
+    /* Accent - Vibrant Green (from logo road) */
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 15%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 15%;
+    
+    /* Muted */
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 10% 50%;
+    
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border & Input */
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: 142 76% 60%;
+    
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode with brand colors */
+    --background: 220 50% 10%;
+    --foreground: 0 0% 98%;
+    
+    --primary: 142 76% 60%;
+    --primary-foreground: 220 50% 20%;
+    
+    --secondary: 220 40% 25%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    
+    --card: 220 50% 15%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 220 50% 15%;
+    --popover-foreground: 0 0% 98%;
+    
+    --muted: 220 30% 20%;
+    --muted-foreground: 220 10% 70%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 220 30% 25%;
+    --input: 220 30% 25%;
+    --ring: 142 76% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Better focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Modern 2025 Design Utilities */
+@layer utilities {
+  /* Brand gradients with modern effects */
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, hsl(220 50% 20%) 0%, hsl(220 50% 15%) 50%, hsl(220 50% 12%) 100%);
+    position: relative;
+  }
+  
+  .bg-brand-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(118, 215, 76, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  
+  .bg-brand-gradient-light {
+    background: linear-gradient(135deg, hsl(220 50% 25%) 0%, hsl(220 50% 20%) 100%);
+  }
+  
+  /* Glassmorphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .glass-dark {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Modern card with shadow and hover */
+  .card-modern {
+    @apply bg-card rounded-xl border border-border/50 shadow-lg;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-modern:hover {
+    @apply shadow-xl border-border;
+    transform: translateY(-2px);
+  }
+  
+  /* Animated gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(142 76% 60%) 0%, hsl(142 71% 45%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Modern button with glow effect */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-glow:hover::before {
+    left: 100%;
+  }
+  
+  /* Brand colors - JENDA MOBILITY */
+  .text-brand-green {
+    color: hsl(142 76% 60%);
+  }
+  
+  .bg-brand-green {
+    background-color: hsl(142 76% 60%);
+  }
+  
+  .border-brand-green {
+    border-color: hsl(142 76% 60%);
+  }
+  
+  .hover\:bg-brand-green:hover {
+    background-color: hsl(142 76% 60%);
+  }
+  
+  .text-brand-dark {
+    color: hsl(220 50% 20%);
+  }
+  
+  .bg-brand-dark {
+    background-color: hsl(220 50% 20%);
+  }
+  
+  /* Brand color utilities for consistent theming */
+  .brand-accent {
+    color: hsl(142 76% 60%);
+  }
+  
+  .brand-primary {
+    color: hsl(220 50% 20%);
+  }
+  
+  /* Mobile-first responsive utilities */
+  .mobile-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  .mobile-heading {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+  
+  /* Smooth animations */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  /* Loading shimmer effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  /* Touch-friendly tap targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing on mobile */
+  .mobile-spacing {
+    @apply space-y-4;
+  }
+}

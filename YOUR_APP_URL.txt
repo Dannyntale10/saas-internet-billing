@@ -1,0 +1,20 @@
+✅ YOUR CORRECT APP URL:
+
+https://saas-internet-billing-7g8h3wn88-dannyntale10s-projects.vercel.app
+
+🔐 LOGIN CREDENTIALS:
+
+Email: dannyntale10@gmail.com
+Password: Hubolt@83
+
+📋 DIRECT LOGIN LINK:
+
+https://saas-internet-billing-7g8h3wn88-dannyntale10s-projects.vercel.app/auth/login
+
+🚨 DO NOT USE:
+saas-internet-billing.vercel.app
+(This domain is NOT configured)
+
+✅ ALWAYS USE:
+The deployment URL above (it always works!)
+

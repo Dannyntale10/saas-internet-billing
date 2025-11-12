@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite doesn't support enums, using String instead
+// UserRole: ADMIN, CLIENT, END_USER
+// VoucherStatus: ACTIVE, USED, EXPIRED, CANCELLED
+// PaymentStatus: PENDING, COMPLETED, FAILED, REFUNDED
+// PaymentMethod: MTN_MOBILE_MONEY, AIRTEL_MONEY, VOUCHER
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("END_USER") // ADMIN, CLIENT, END_USER
+  phone         String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Multi-tenant relationships
+  parentClientId String?  // For end-users, this is their client
+  parentClient   User?    @relation("ClientEndUsers", fields: [parentClientId], references: [id])
+  endUsers       User[]   @relation("ClientEndUsers")
+
+  // Router configuration
+  routerConfig   RouterConfig?
+
+  // Vouchers created by this user (if client)
+  vouchers       Voucher[]
+  
+  // Payments made by this user
+  payments       Payment[]
+
+  // Sessions
+  sessions       Session[]
+  
+  // Portal customization
+  portal         ClientPortal?
+
+  @@index([parentClientId])
+  @@index([role])
+}
+
+model RouterConfig {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  host          String
+  port          Int      @default(8728)
+  username      String
+  password      String   // Encrypted
+  apiPort       Int      @default(8728)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Voucher {
+  id            String        @id @default(cuid())
+  code          String        @unique
+  name          String?
+  clientId      String
+  client        User          @relation(fields: [clientId], references: [id])
+  status        String        @default("ACTIVE") // ACTIVE, USED, EXPIRED, CANCELLED
+  
+  // Internet package details
+  dataLimit     Float?        // in GB, null = unlimited
+  timeLimit     Int?          // in hours, null = unlimited
+  speedLimit    Int?          // in Mbps, null = unlimited
+  price         Float
+  
+  // Validity
+  validFrom     DateTime      @default(now())
+  validUntil    DateTime?
+  
+  // Usage tracking
+  usedBy        String?       // End-user ID who used it
+  usedAt       DateTime?
+  dataUsed      Float         @default(0) // in GB
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Payment associated with this voucher
+  payment       Payment?
+
+  @@index([clientId])
+  @@index([code])
+  @@index([status])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  voucherId     String?       @unique
+  voucher       Voucher?      @relation(fields: [voucherId], references: [id])
+  
+  amount        Float
+  currency      String        @default("UGX")
+  method        String        // MTN_MOBILE_MONEY, AIRTEL_MONEY, VOUCHER
+  status        String        @default("PENDING") // PENDING, COMPLETED, FAILED, REFUNDED
+  
+  // Mobile money details
+  phoneNumber   String?
+  transactionId String?       @unique
+  reference     String?       @unique
+  
+  // Timestamps
+  initiatedAt   DateTime      @default(now())
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([transactionId])
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  sessionToken  String   @unique
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires       DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model UsageLog {
+  id            String   @id @default(cuid())
+  userId        String
+  voucherId     String?
+  
+  // Usage metrics
+  dataUsed      Float    // in GB
+  duration      Int      // in seconds
+  uploadBytes   String   @default("0") // Store as string for SQLite compatibility
+  downloadBytes String   @default("0") // Store as string for SQLite compatibility
+  
+  // Router info
+  ipAddress     String?
+  macAddress    String?
+  
+  timestamp     DateTime @default(now())
+
+  @@index([userId])
+  @@index([voucherId])
+  @@index([timestamp])
+}
+
+model ClientPortal {
+  id            String   @id @default(cuid())
+  clientId      String   @unique
+  client        User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Branding
+  companyName   String
+  logoUrl       String?
+  faviconUrl    String?
+  
+  // Contact Information
+  phone1        String?
+  phone2        String?
+  whatsapp      String?
+  email         String?
+  address       String?
+  
+  // Social Media
+  facebook      String?
+  twitter       String?
+  instagram     String?
+  linkedin      String?
+  website       String?
+  
+  // Portal Settings
+  welcomeMessage String?
+  showFreeTrial  Boolean @default(true)
+  freeTrialText  String? @default("Free trial available, click here.")
+  showVoucherInput Boolean @default(true)
+  showPackages    Boolean @default(true)
+  showPaymentMethods Boolean @default(true)
+  
+  // Colors & Theme
+  primaryColor   String? @default("#76D74C")
+  secondaryColor String? @default("#1e293b")
+  backgroundColor String? @default("#0f172a")
+  
+  // Footer
+  footerText     String? @default("Powered by SpotiFi")
+  showPoweredBy  Boolean @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([clientId])
+}
+
