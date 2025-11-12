@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
@@ -34,8 +34,22 @@ export default function ClientDashboard() {
   useEffect(() => {
     if (status === 'loading') return
 
-    if (!session || session.user.role !== 'CLIENT') {
-      router.push('/auth/login')
+    if (!session) {
+      router.push('/auth/login?role=client')
+      return
+    }
+
+    // Check role - handle both uppercase and lowercase
+    const userRole = (session.user.role as string)?.toUpperCase()
+    console.log('Client dashboard - User role:', userRole)
+
+    // STRICT: Only CLIENT users can access client dashboard
+    if (userRole !== 'CLIENT') {
+      console.error('❌ Access denied: User role', userRole, 'cannot access client dashboard')
+      // Sign out and redirect to login
+      signOut({ redirect: false, callbackUrl: `/auth/login?role=client` }).then(() => {
+        router.push(`/auth/login?role=client&error=access_denied`)
+      })
       return
     }
 
@@ -44,7 +58,17 @@ export default function ClientDashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/client/dashboard')
+      setLoading(true)
+      // Use Promise.all for parallel fetching if needed, or just fetch dashboard endpoint
+      const res = await fetch('/api/client/dashboard', {
+        cache: 'no-store', // Ensure fresh data
+      })
+      
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=client')
+        return
+      }
+      
       if (res.ok) {
         const data = await res.json()
         setStats({
@@ -53,9 +77,14 @@ export default function ClientDashboard() {
           totalRevenue: data.stats?.totalRevenue || 0,
           recentPayments: data.recentPayments || []
         })
+      } else {
+        const errorData = await res.json()
+        toast.error(errorData.error || 'Failed to load dashboard')
+        setLoading(false)
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
+      toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }

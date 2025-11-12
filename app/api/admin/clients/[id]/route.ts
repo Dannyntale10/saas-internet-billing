@@ -36,8 +36,18 @@ export async function GET(
       )
     }
 
+    // Get portal data if exists
+    const portal = await prisma.clientPortal.findUnique({
+      where: { clientId: client.id },
+    })
+
     return NextResponse.json({
       ...client,
+      phone1: portal?.phone1 || client.phone || null,
+      phone2: portal?.phone2 || null,
+      whatsapp: portal?.whatsapp || null,
+      address: portal?.address || null,
+      logo: portal?.logoUrl || null,
       packages: [], // Packages are managed via vouchers
     })
   } catch (error) {
@@ -65,19 +75,57 @@ export async function PUT(
     const body = await request.json()
     const { name, logo, phone1, phone2, whatsapp, email, address, isActive } = body
 
-    const updateData: any = {}
-    if (name !== undefined) updateData.name = name
-    if (logo !== undefined) updateData.logo = logo || null
-    if (phone1 !== undefined) updateData.phone1 = phone1 || null
-    if (phone2 !== undefined) updateData.phone2 = phone2 || null
-    if (whatsapp !== undefined) updateData.whatsapp = whatsapp || null
-    if (email !== undefined) updateData.email = email || null
-    if (address !== undefined) updateData.address = address || null
-    if (isActive !== undefined) updateData.isActive = isActive
+    // Update User model fields
+    const userUpdateData: any = {}
+    if (name !== undefined) userUpdateData.name = name
+    if (email !== undefined) userUpdateData.email = email
+    if (phone1 !== undefined) userUpdateData.phone = phone1 || null // User model has 'phone' not 'phone1'
+    if (isActive !== undefined) userUpdateData.isActive = isActive
 
+    // Update or create ClientPortal for portal-specific fields
+    const portalUpdateData: any = {}
+    if (phone1 !== undefined) portalUpdateData.phone1 = phone1 || null
+    if (phone2 !== undefined) portalUpdateData.phone2 = phone2 || null
+    if (whatsapp !== undefined) portalUpdateData.whatsapp = whatsapp || null
+    if (address !== undefined) portalUpdateData.address = address || null
+    if (logo !== undefined) portalUpdateData.logoUrl = logo || null
+    if (name !== undefined) portalUpdateData.companyName = name
+
+    // Update user
     const client = await prisma.user.update({
       where: { id: params.id, role: 'CLIENT' },
-      data: updateData,
+      data: userUpdateData,
+      include: {
+        portal: true,
+      },
+    })
+
+    // Update or create ClientPortal
+    if (Object.keys(portalUpdateData).length > 0) {
+      if (client.portal) {
+        // Update existing portal
+        await prisma.clientPortal.update({
+          where: { id: client.portal.id },
+          data: portalUpdateData,
+        })
+      } else {
+        // Create new portal
+        await prisma.clientPortal.create({
+          data: {
+            clientId: client.id,
+            companyName: name || client.name,
+            ...portalUpdateData,
+          },
+        })
+      }
+    }
+
+    // Fetch updated client with portal
+    const updatedClient = await prisma.user.findUnique({
+      where: { id: params.id },
+      include: {
+        portal: true,
+      },
     })
 
     // Log activity
@@ -87,15 +135,23 @@ export async function PUT(
       entityType: 'Client',
       entityId: client.id,
       description: `Updated client: ${client.name}`,
-      metadata: { clientId: client.id, changes: updateData },
+      metadata: { clientId: client.id, changes: { ...userUpdateData, ...portalUpdateData } },
       request,
     })
 
-    return NextResponse.json(client)
-  } catch (error) {
+    // Return client data in expected format
+    return NextResponse.json({
+      ...updatedClient,
+      phone1: updatedClient?.portal?.phone1 || updatedClient?.phone || null,
+      phone2: updatedClient?.portal?.phone2 || null,
+      whatsapp: updatedClient?.portal?.whatsapp || null,
+      address: updatedClient?.portal?.address || null,
+      logo: updatedClient?.portal?.logoUrl || null,
+    })
+  } catch (error: any) {
     console.error('Error updating client:', error)
     return NextResponse.json(
-      { error: 'Failed to update client' },
+      { error: error.message || 'Failed to update client' },
       { status: 500 }
     )
   }

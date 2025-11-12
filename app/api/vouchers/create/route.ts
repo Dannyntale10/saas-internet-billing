@@ -8,10 +8,10 @@ import { generateVoucherCode } from '@/lib/utils'
 const voucherSchema = z.object({
   name: z.string().optional(),
   dataLimit: z.number().positive().optional().nullable(),
-  timeLimit: z.number().positive().optional().nullable(),
-  speedLimit: z.number().positive().optional().nullable(),
+  timeLimit: z.number().int().positive().optional().nullable(),
+  speedLimit: z.number().int().positive().optional().nullable(),
   price: z.number().positive(),
-  validUntil: z.string().datetime().optional().nullable(),
+  validUntil: z.string().optional().nullable(),
   quantity: z.number().int().positive().default(1),
 })
 
@@ -27,7 +27,28 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const data = voucherSchema.parse(body)
+    
+    // Clean up the body - convert empty strings to null/undefined
+    const cleanedBody = {
+      ...body,
+      name: body.name?.trim() || undefined,
+      dataLimit: body.dataLimit === '' || body.dataLimit === null ? null : (body.dataLimit ? Number(body.dataLimit) : null),
+      timeLimit: body.timeLimit === '' || body.timeLimit === null ? null : (body.timeLimit ? Number(body.timeLimit) : null),
+      speedLimit: body.speedLimit === '' || body.speedLimit === null ? null : (body.speedLimit ? Number(body.speedLimit) : null),
+      price: Number(body.price),
+      validUntil: body.validUntil === '' || body.validUntil === null ? null : body.validUntil,
+      quantity: body.quantity ? Number(body.quantity) : 1,
+    }
+
+    // Validate price
+    if (!cleanedBody.price || isNaN(cleanedBody.price) || cleanedBody.price <= 0) {
+      return NextResponse.json(
+        { error: 'Price is required and must be a positive number' },
+        { status: 400 }
+      )
+    }
+
+    const data = voucherSchema.parse(cleanedBody)
 
     const clientId = session.user.role === 'ADMIN' 
       ? (body.clientId || session.user.id)
@@ -43,16 +64,30 @@ export async function POST(req: NextRequest) {
         code = generateVoucherCode()
       }
 
+      // Convert validUntil string to Date if provided
+      let validUntilDate: Date | null = null
+      if (data.validUntil) {
+        try {
+          validUntilDate = new Date(data.validUntil)
+          // Check if date is valid
+          if (isNaN(validUntilDate.getTime())) {
+            validUntilDate = null
+          }
+        } catch {
+          validUntilDate = null
+        }
+      }
+
       const voucher = await prisma.voucher.create({
         data: {
           code,
           name: data.name || `Voucher ${code}`,
           clientId,
-          dataLimit: data.dataLimit,
-          timeLimit: data.timeLimit,
-          speedLimit: data.speedLimit,
+          dataLimit: data.dataLimit ?? null,
+          timeLimit: data.timeLimit ?? null,
+          speedLimit: data.speedLimit ?? null,
           price: data.price,
-          validUntil: data.validUntil ? new Date(data.validUntil) : null,
+          validUntil: validUntilDate,
         }
       })
 
@@ -66,15 +101,19 @@ export async function POST(req: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors)
       return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
+        { 
+          error: 'Invalid input', 
+          details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        },
         { status: 400 }
       )
     }
 
     console.error('Voucher creation error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     )
   }

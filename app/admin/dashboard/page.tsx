@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
@@ -34,22 +34,37 @@ export default function AdminDashboard() {
   const toast = useToast()
 
   useEffect(() => {
-    if (status === 'loading') return
+    if (status === 'loading') {
+      return
+    }
 
     if (!session) {
-      router.push('/auth/login')
+      console.log('No session, redirecting to login')
+      router.push('/auth/login?role=admin')
       return
     }
 
-    if (session.user.role !== 'ADMIN') {
-      if (session.user.role === 'CLIENT') {
-        router.push('/client/dashboard')
-      } else {
-        router.push('/user/dashboard')
-      }
+    if (!session.user) {
+      console.log('No user in session, redirecting to login')
+      router.push('/auth/login?role=admin')
       return
     }
 
+    // Check role - handle both uppercase and lowercase
+    const userRole = session.user.role?.toUpperCase()
+    console.log('Admin dashboard - User role:', userRole)
+
+    // STRICT: Only ADMIN users can access admin dashboard
+    if (userRole !== 'ADMIN') {
+      console.error('❌ Access denied: User role', userRole, 'cannot access admin dashboard')
+      // Sign out and redirect to login
+      signOut({ redirect: false, callbackUrl: `/auth/login?role=admin` }).then(() => {
+        router.push(`/auth/login?role=admin&error=access_denied`)
+      })
+      return
+    }
+
+    console.log('Session valid, fetching stats...')
     fetchStats()
   }, [session, status, router])
 
@@ -168,10 +183,10 @@ export default function AdminDashboard() {
       <div className="mobile-padding">
         {/* Modern Header */}
         <div className="mb-6 sm:mb-8 animate-slide-up">
-          <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">
+          <h1 className="mobile-heading font-bold" style={{ color: '#111827' }}>
             Admin Dashboard
           </h1>
-          <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+          <p className="mt-2 mobile-text" style={{ color: '#4b5563' }}>
             Overview of your internet billing system
           </p>
         </div>

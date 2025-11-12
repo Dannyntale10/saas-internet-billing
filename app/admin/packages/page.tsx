@@ -109,7 +109,10 @@ export default function PackagesPage() {
             </p>
           </div>
           <Link href="/admin/vouchers">
-            <Button variant="gradient">
+            <Button 
+              variant="gradient" 
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Package
             </Button>
@@ -172,7 +175,10 @@ export default function PackagesPage() {
                 Create packages by generating vouchers
               </p>
               <Link href="/admin/vouchers">
-                <Button variant="gradient">
+                <Button 
+                  variant="gradient" 
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Package
                 </Button>

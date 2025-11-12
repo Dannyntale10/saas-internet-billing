@@ -72,7 +72,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex justify-between items-center h-16 sm:h-20">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex items-center space-x-2 group">
+              <Link 
+                href={role === 'ADMIN' ? '/admin/dashboard' : role === 'CLIENT' ? '/client/dashboard' : role === 'END_USER' ? '/user/dashboard' : '/'} 
+                className="flex items-center space-x-2 group"
+              >
                 <Logo size="sm" className="text-white transition-transform group-hover:scale-105" />
                 <span className="hidden sm:block text-white font-bold text-lg">JENDA MOBILITY</span>
               </Link>

@@ -53,33 +53,48 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log('🔍 Authorization attempt for:', credentials?.email)
+          
           if (!credentials?.email || !credentials?.password) {
-            console.error('Missing credentials')
-            return null
+            console.error('❌ Missing credentials')
+            throw new Error('Email and password are required')
           }
 
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email.trim().toLowerCase() }
           })
 
           if (!user) {
-            console.error(`User not found: ${credentials.email}`)
-            return null
+            console.error(`❌ User not found: ${credentials.email}`)
+            throw new Error('Invalid email or password')
           }
 
           if (!user.isActive) {
-            console.error(`User account is inactive: ${credentials.email}`)
-            return null
+            console.error(`❌ User account is inactive: ${credentials.email}`)
+            throw new Error('Account is inactive. Please contact support.')
           }
 
+          console.log('🔐 Verifying password...')
           const isValid = await bcrypt.compare(credentials.password, user.password)
 
           if (!isValid) {
-            console.error(`Invalid password for: ${credentials.email}`)
-            return null
+            console.error(`❌ Invalid password for: ${credentials.email}`)
+            throw new Error('Invalid email or password')
           }
 
-          console.log(`Successful login: ${user.email} (${user.role})`)
+          // Check if role matches the expected role from credentials (if provided)
+          // This is a secondary check - the main role validation happens in the login page
+          const expectedRole = credentials.role // Can be passed from login page
+          if (expectedRole) {
+            const userRole = user.role.toUpperCase()
+            const expectedRoleUpper = expectedRole.toUpperCase()
+            if (userRole !== expectedRoleUpper) {
+              console.error(`❌ Role mismatch: User is ${userRole}, expected ${expectedRoleUpper}`)
+              throw new Error(`Access denied. This account is for ${userRole} access.`)
+            }
+          }
+
+          console.log(`✅ Successful login: ${user.email} (${user.role})`)
 
           return {
             id: user.id,
@@ -88,8 +103,10 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
             parentClientId: user.parentClientId,
           }
-        } catch (error) {
-          console.error('Authorization error:', error)
+        } catch (error: any) {
+          console.error('❌ Authorization error:', error)
+          // Return null for NextAuth to show generic error
+          // The error message will be logged above
           return null
         }
       }

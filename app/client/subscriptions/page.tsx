@@ -2,141 +2,181 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useSession, signOut } from 'next-auth/react'
+import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Logo } from '@/components/ui/logo'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 
 interface Subscription {
   id: string
   status: string
   billingCycle: string
-  autoRenew: boolean
-  startsAt: string
-  expiresAt: string
+  startDate: string
+  endDate: string | null
   nextBillingDate: string | null
-  package: { name: string; price: number; duration: number }
-  client: { name: string } | null
+  name: string
+  price: number
+  currency: string
 }
 
 export default function ClientSubscriptions() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('clientToken')
-    if (!token) {
-      router.push('/client/login')
+    if (status === 'loading') return
+
+    if (!session) {
+      router.push('/auth/login?role=client')
       return
     }
+
+    // STRICT: Only CLIENT users can access client pages
+    const userRole = (session.user.role as string)?.toUpperCase()
+    if (userRole !== 'CLIENT') {
+      console.error('❌ Access denied: User role', userRole, 'cannot access client pages')
+      signOut({ redirect: false, callbackUrl: `/auth/login?role=client` }).then(() => {
+        router.push(`/auth/login?role=client&error=access_denied`)
+      })
+      return
+    }
+
     fetchSubscriptions()
-  }, [router])
+  }, [session, status, router])
 
   const fetchSubscriptions = async () => {
     try {
-      const token = localStorage.getItem('clientToken')
-      const res = await fetch('/api/client/subscriptions', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      setLoading(true)
+      setError(null)
+      const res = await fetch('/api/client/subscriptions')
 
-      if (res.status === 401) {
-        localStorage.removeItem('clientToken')
-        router.push('/client/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=client')
         return
       }
 
       if (res.ok) {
         const data = await res.json()
         setSubscriptions(data)
+      } else {
+        const errorData = await res.json()
+        setError(new Error(errorData.error || 'Failed to fetch subscriptions'))
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch subscriptions')
+      setError(error)
       console.error('Error fetching subscriptions:', error)
     } finally {
       setLoading(false)
     }
   }
 
+  if (status === 'loading') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <LoadingSpinner size="lg" text="Loading..." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!session) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ErrorDisplay error="Please login to continue." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  // STRICT: Only CLIENT users can access client pages
+  const userRole = (session.user.role as string)?.toUpperCase()
+  if (userRole !== 'CLIENT') {
+    signOut({ redirect: false, callbackUrl: `/auth/login?role=client` }).then(() => {
+      router.push(`/auth/login?role=client&error=access_denied`)
+    })
+    return null
+  }
+
   return (
-    <div className="min-h-screen bg-brand-dark">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div>
-            <Logo />
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">My Subscriptions</h1>
-          </div>
-          <Link href="/client/dashboard">
-            <Button variant="outline">Back to Dashboard</Button>
-          </Link>
+    <DashboardLayout>
+      <div className="mobile-padding">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">Subscriptions</h1>
+          <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+            Manage your active subscriptions
+          </p>
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-8 text-center text-gray-400">Loading...</div>
-            ) : subscriptions.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">No subscriptions found</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-                {subscriptions.map((subscription) => (
-                  <Card key={subscription.id} className="bg-brand-light border-brand-accent">
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-1">{subscription.package.name}</h3>
-                          <p className="text-gray-400 text-sm">
-                            {subscription.package.duration} hours • {subscription.billingCycle}
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-button text-xs ${
-                          subscription.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                          subscription.status === 'paused' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-red-500/20 text-red-400'
-                        }`}>
-                          {subscription.status}
-                        </span>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Price:</span>
-                          <span className="text-white font-medium">UGX {subscription.package.price.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Started:</span>
-                          <span className="text-white">{new Date(subscription.startsAt).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Expires:</span>
-                          <span className="text-white">{new Date(subscription.expiresAt).toLocaleString()}</span>
-                        </div>
-                        {subscription.nextBillingDate && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Next Billing:</span>
-                            <span className="text-white">{new Date(subscription.nextBillingDate).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Auto-renew:</span>
-                          <span className={subscription.autoRenew ? 'text-green-400' : 'text-red-400'}>
-                            {subscription.autoRenew ? 'Enabled' : 'Disabled'}
-                          </span>
-                        </div>
-                        {subscription.client && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Client:</span>
-                            <span className="text-white">{subscription.client.name}</span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {error && (
+          <div className="mb-6">
+            <ErrorDisplay error={error} onRetry={fetchSubscriptions} />
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <LoadingSpinner size="md" text="Loading subscriptions..." />
+          </div>
+        ) : subscriptions.length === 0 ? (
+          <Card className="animate-slide-up">
+            <CardContent className="py-12 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                No subscriptions found
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                You don't have any active subscriptions yet
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {subscriptions.map((subscription) => (
+              <Card key={subscription.id} className="animate-scale-in">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{subscription.name}</CardTitle>
+                    <span className={`px-2 py-1 rounded-lg text-xs ${
+                      subscription.status === 'active' 
+                        ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400'
+                    }`}>
+                      {subscription.status}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      {subscription.currency} {subscription.price.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Billing: {subscription.billingCycle}
+                    </p>
+                    {subscription.endDate && (
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        Expires: {new Date(subscription.endDate).toLocaleDateString()}
+                      </p>
+                    )}
+                    {subscription.nextBillingDate && (
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        Next billing: {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
-

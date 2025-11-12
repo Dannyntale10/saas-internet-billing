@@ -1,25 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
+import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
-import { Logo } from '@/components/ui/logo'
 
 export default function NewClient() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
-    subdomain: '',
-    phone1: '',
-    phone2: '',
-    whatsapp: '',
     email: '',
-    address: '',
+    phone: '',
+    password: '',
   })
+  const [createdClient, setCreatedClient] = useState<{ email: string; password: string } | null>(null)
+
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (!session) {
+      router.push('/auth/login?role=admin')
+      return
+    }
+
+    if (session.user.role !== 'ADMIN') {
+      setError('Access denied. Admin privileges required.')
+      setTimeout(() => router.push('/auth/login?role=admin'), 2000)
+      return
+    }
+  }, [session, status, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,33 +42,34 @@ export default function NewClient() {
     setError(null)
 
     try {
-      const token = localStorage.getItem('adminToken')
-      if (!token) {
-        setError('You are not logged in. Please login first.')
-        router.push('/admin/login')
-        return
-      }
-
       const res = await fetch('/api/admin/clients', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password || undefined, // Will use default if not provided
+        }),
       })
-
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        setError('Session expired. Please login again.')
-        setTimeout(() => router.push('/admin/login'), 2000)
-        return
-      }
 
       const data = await res.json()
 
       if (res.ok) {
-        router.push('/admin/dashboard')
+        // Show success message with login credentials
+        const clientPassword = formData.password || 'changeme123'
+        setCreatedClient({
+          email: data.email,
+          password: clientPassword,
+        })
+        // Clear form
+        setFormData({ name: '', email: '', phone: '', password: '' })
+        // Auto-redirect after 5 seconds
+        setTimeout(() => {
+          router.push('/admin/clients')
+        }, 5000)
       } else {
         console.error('Error creating client:', data)
         setError(data.error || 'Failed to create client')
@@ -66,27 +82,58 @@ export default function NewClient() {
     }
   }
 
+  if (status === 'loading') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  // STRICT: Only ADMIN users can access admin pages
+  const userRole = session?.user?.role ? (session.user.role as string).toUpperCase() : null
+  if (!session || userRole !== 'ADMIN') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-red-600">Access denied. Please login as admin.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-brand-dark p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <Logo />
-          <h1 className="text-3xl font-bold text-white mt-4">Add New Client</h1>
+    <DashboardLayout>
+      <div className="mobile-padding max-w-3xl mx-auto">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">
+            Add New Client
+          </h1>
+          <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+            Create a new client account to manage their internet billing
+          </p>
         </div>
 
-        <Card>
+        <Card className="animate-slide-up">
           <CardHeader>
-            <CardTitle>Client Information</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Client Information</CardTitle>
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 rounded-button bg-red-500/20 text-red-300 border border-red-500/50 text-sm">
+              <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300">
                 {error}
               </div>
             )}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Client Name *
                 </label>
                 <Input
@@ -94,85 +141,87 @@ export default function NewClient() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Pentagon Street WiFi"
                   required
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Subdomain (optional)
-                </label>
-                <Input
-                  value={formData.subdomain}
-                  onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
-                  placeholder="e.g., pentagon"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Primary Phone
-                </label>
-                <Input
-                  value={formData.phone1}
-                  onChange={(e) => setFormData({ ...formData, phone1: e.target.value })}
-                  placeholder="+256702772200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Secondary Phone
-                </label>
-                <Input
-                  value={formData.phone2}
-                  onChange={(e) => setFormData({ ...formData, phone2: e.target.value })}
-                  placeholder="+256753908001"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  WhatsApp Number
-                </label>
-                <Input
-                  value={formData.whatsapp}
-                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                  placeholder="+256702772200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Address *
                 </label>
                 <Input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="support@example.com"
+                  placeholder="client@example.com"
+                  required
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Address
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Phone Number
                 </label>
                 <Input
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Business address"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+256702772200"
+                  className="w-full"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Password (optional - defaults to "changeme123")
+                </label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Leave empty for default password"
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  If not provided, default password will be: changeme123
+                </p>
+              </div>
+
+              {createdClient && (
+                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500">
+                  <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
+                    ✅ Client created successfully!
+                  </h3>
+                  <p className="text-sm text-green-700 dark:text-green-400 mb-2">
+                    Login credentials:
+                  </p>
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded border border-green-200 dark:border-green-700">
+                    <p className="text-sm font-mono text-gray-900 dark:text-white">
+                      <strong>Email:</strong> {createdClient.email}
+                    </p>
+                    <p className="text-sm font-mono text-gray-900 dark:text-white mt-1">
+                      <strong>Password:</strong> {createdClient.password}
+                    </p>
+                  </div>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                    Redirecting to clients list in 5 seconds...
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+                >
                   {loading ? 'Creating...' : 'Create Client'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto border-2 border-gray-400 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-semibold"
                 >
                   Cancel
                 </Button>
@@ -181,7 +230,6 @@ export default function NewClient() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
-

@@ -2,138 +2,127 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
-import { Logo } from '@/components/ui/logo'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 
 interface Voucher {
   id: string
   code: string
-  packageId: string
-  isUsed: boolean
+  name?: string
+  status: string
   createdAt: string
-  package: { name: string; price: number; currency: string } | null
-}
-
-interface Package {
-  id: string
-  name: string
   price: number
   currency: string
-  isActive: boolean
+  client?: { name: string }
 }
 
 export default function VouchersPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [vouchers, setVouchers] = useState<Voucher[]>([])
-  const [packages, setPackages] = useState<Package[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   // Bulk generation form
   const [bulkForm, setBulkForm] = useState({
-    packageId: '',
+    name: '',
+    price: '',
+    currency: 'UGX',
+    dataLimit: '',
+    timeLimit: '',
+    speedLimit: '',
     count: '10',
     prefix: '',
     expiresAt: '',
   })
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
+    if (status === 'loading') return
+
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/auth/login?role=admin')
       return
     }
 
     fetchVouchers()
-    fetchPackages()
-  }, [router])
+  }, [session, status, router])
 
   const fetchVouchers = async () => {
     setLoading(true)
+    setError(null)
     try {
-      const token = localStorage.getItem('adminToken')
-      const res = await fetch('/api/admin/vouchers', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const res = await fetch('/api/admin/vouchers')
 
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
         return
       }
 
       if (res.ok) {
         const data = await res.json()
         setVouchers(data)
+      } else {
+        const errorData = await res.json()
+        setError(new Error(errorData.error || 'Failed to fetch vouchers'))
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch vouchers')
+      setError(error)
       console.error('Error fetching vouchers:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchPackages = async () => {
-    try {
-      const token = localStorage.getItem('adminToken')
-      const res = await fetch('/api/admin/packages', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setPackages(data.filter((p: Package) => p.isActive))
-      }
-    } catch (error) {
-      console.error('Error fetching packages:', error)
-    }
-  }
-
   const handleBulkGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
 
     try {
-      const token = localStorage.getItem('adminToken')
       const res = await fetch('/api/admin/vouchers/bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          packageId: bulkForm.packageId,
+          name: bulkForm.name || undefined,
+          price: parseFloat(bulkForm.price) || 0,
+          currency: bulkForm.currency,
+          dataLimit: bulkForm.dataLimit ? parseFloat(bulkForm.dataLimit) : undefined,
+          timeLimit: bulkForm.timeLimit ? parseInt(bulkForm.timeLimit) : undefined,
+          speedLimit: bulkForm.speedLimit ? parseInt(bulkForm.speedLimit) : undefined,
           count: parseInt(bulkForm.count),
           prefix: bulkForm.prefix || undefined,
           expiresAt: bulkForm.expiresAt || undefined,
         }),
       })
 
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
         return
       }
 
       if (res.ok) {
-        setBulkForm({ packageId: '', count: '10', prefix: '', expiresAt: '' })
+        setBulkForm({ name: '', price: '', currency: 'UGX', dataLimit: '', timeLimit: '', speedLimit: '', count: '10', prefix: '', expiresAt: '' })
         fetchVouchers()
         alert('Vouchers generated successfully!')
       } else {
         const data = await res.json()
-        alert(data.error || 'Failed to generate vouchers')
+        setError(new Error(data.error || 'Failed to generate vouchers'))
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to generate vouchers')
+      setError(error)
       console.error('Error generating vouchers:', error)
-      alert('An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -141,12 +130,15 @@ export default function VouchersPage() {
 
   const handleExport = () => {
     const csv = [
-      ['Code', 'Package', 'Status', 'Created At'].join(','),
+      ['Code', 'Name', 'Price', 'Currency', 'Status', 'Client', 'Created At'].join(','),
       ...filteredVouchers.map((v) =>
         [
           v.code,
-          v.package?.name || 'N/A',
-          v.isUsed ? 'Used' : 'Available',
+          v.name || 'N/A',
+          v.price,
+          v.currency,
+          v.status,
+          v.client?.name || 'N/A',
           new Date(v.createdAt).toLocaleString(),
         ].join(',')
       ),
@@ -161,60 +153,147 @@ export default function VouchersPage() {
   }
 
   const filteredVouchers = vouchers.filter((v) => {
-    const matchesSearch = v.code.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = v.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.name && v.name.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'used' && v.isUsed) ||
-      (statusFilter === 'available' && !v.isUsed)
+      (statusFilter === 'USED' && v.status === 'USED') ||
+      (statusFilter === 'ACTIVE' && v.status === 'ACTIVE') ||
+      (statusFilter === 'EXPIRED' && v.status === 'EXPIRED')
     return matchesSearch && matchesStatus
   })
 
+  if (status === 'loading') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <LoadingSpinner size="lg" text="Loading..." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!session || session.user.role !== 'ADMIN') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ErrorDisplay error="Access denied. Please login as admin." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-brand-dark p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <DashboardLayout>
+      <div className="mobile-padding">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <Logo />
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">Voucher Management</h1>
+            <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">Voucher Management</h1>
+            <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+              Create and manage vouchers for your clients
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Link href="/admin/dashboard">
-              <Button variant="outline" className="w-full sm:w-auto">Back to Dashboard</Button>
-            </Link>
-            <Button onClick={handleExport} variant="outline" className="w-full sm:w-auto">
+            <Button 
+              onClick={handleExport} 
+              variant="outline" 
+              className="w-full sm:w-auto border-2 border-green-600 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:border-green-700 dark:hover:border-green-500 transition-all font-bold shadow-lg hover:shadow-xl"
+            >
               Export CSV
             </Button>
           </div>
         </div>
 
+        {error && (
+          <div className="mb-6">
+            <ErrorDisplay error={error} onRetry={fetchVouchers} />
+          </div>
+        )}
+
         {/* Bulk Generation */}
-        <Card className="mb-6">
+        <Card className="mb-6 animate-slide-up">
           <CardHeader>
             <CardTitle>Bulk Generate Vouchers</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleBulkGenerate} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Package *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Voucher Name
+                  </label>
+                  <Input
+                    value={bulkForm.name}
+                    onChange={(e) => setBulkForm({ ...bulkForm, name: e.target.value })}
+                    placeholder="e.g., Daily Package"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Price *
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={bulkForm.price}
+                    onChange={(e) => setBulkForm({ ...bulkForm, price: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Currency *
                   </label>
                   <select
-                    className="flex h-10 w-full rounded-button border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent"
-                    value={bulkForm.packageId}
-                    onChange={(e) => setBulkForm({ ...bulkForm, packageId: e.target.value })}
+                    className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                    value={bulkForm.currency}
+                    onChange={(e) => setBulkForm({ ...bulkForm, currency: e.target.value })}
                     required
                   >
-                    <option value="">Select Package</option>
-                    {packages.map((pkg) => (
-                      <option key={pkg.id} value={pkg.id}>
-                        {pkg.name} - {pkg.currency} {pkg.price}
-                      </option>
-                    ))}
+                    <option value="UGX">UGX</option>
+                    <option value="USD">USD</option>
+                    <option value="KES">KES</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Data Limit (GB)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={bulkForm.dataLimit}
+                    onChange={(e) => setBulkForm({ ...bulkForm, dataLimit: e.target.value })}
+                    placeholder="Unlimited if empty"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Time Limit (Hours)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={bulkForm.timeLimit}
+                    onChange={(e) => setBulkForm({ ...bulkForm, timeLimit: e.target.value })}
+                    placeholder="Unlimited if empty"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Speed Limit (Mbps)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={bulkForm.speedLimit}
+                    onChange={(e) => setBulkForm({ ...bulkForm, speedLimit: e.target.value })}
+                    placeholder="Unlimited if empty"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Count *
                   </label>
                   <Input
@@ -227,7 +306,7 @@ export default function VouchersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Prefix (optional)
                   </label>
                   <Input
@@ -238,7 +317,7 @@ export default function VouchersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Expires At (optional)
                   </label>
                   <Input
@@ -248,7 +327,11 @@ export default function VouchersPage() {
                   />
                 </div>
               </div>
-              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+              <Button 
+                type="submit" 
+                disabled={loading} 
+                className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+              >
                 {loading ? 'Generating...' : 'Generate Vouchers'}
               </Button>
             </form>
@@ -256,7 +339,7 @@ export default function VouchersPage() {
         </Card>
 
         {/* Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 animate-slide-up">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
@@ -266,54 +349,64 @@ export default function VouchersPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <select
-                className="flex h-10 w-full rounded-button border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent"
+                className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="available">Available</option>
-                <option value="used">Used</option>
+                <option value="ACTIVE">Active</option>
+                <option value="USED">Used</option>
+                <option value="EXPIRED">Expired</option>
               </select>
             </div>
           </CardContent>
         </Card>
 
         {/* Vouchers List */}
-        <Card>
+        <Card className="animate-slide-up">
           <CardHeader>
             <CardTitle>
-              All Vouchers ({filteredVouchers.length}) - {filteredVouchers.filter((v) => !v.isUsed).length} Available
+              All Vouchers ({filteredVouchers.length}) - {filteredVouchers.filter((v) => v.status === 'ACTIVE').length} Active
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-gray-400 text-center py-8">Loading...</p>
+              <div className="py-8 text-center">
+                <LoadingSpinner size="md" text="Loading vouchers..." />
+              </div>
             ) : filteredVouchers.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">No vouchers found.</p>
+              <p className="text-gray-400 dark:text-gray-500 text-center py-8">No vouchers found.</p>
             ) : (
               <div className="space-y-2">
                 {filteredVouchers.map((voucher) => (
                   <div
                     key={voucher.id}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-background-light p-4 rounded-button"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
                   >
                     <div className="flex-1">
-                      <p className="text-white font-medium font-mono">{voucher.code}</p>
-                      <p className="text-sm text-gray-400">
-                        {voucher.package?.name || 'N/A'} - {voucher.package?.currency} {voucher.package?.price}
+                      <p className="text-gray-900 dark:text-white font-medium font-mono">{voucher.code}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {voucher.name || 'N/A'} - {voucher.currency} {voucher.price.toLocaleString()}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      {voucher.client && (
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                          Client: {voucher.client.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                         Created: {new Date(voucher.createdAt).toLocaleString()}
                       </p>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-button text-xs ${
-                        voucher.isUsed
-                          ? 'bg-red-500/20 text-red-300'
-                          : 'bg-green-500/20 text-green-300'
+                      className={`px-3 py-1 rounded-lg text-xs ${
+                        voucher.status === 'USED'
+                          ? 'bg-red-500/20 text-red-700 dark:text-red-400'
+                          : voucher.status === 'ACTIVE'
+                          ? 'bg-green-500/20 text-green-700 dark:text-green-400'
+                          : 'bg-gray-500/20 text-gray-700 dark:text-gray-400'
                       }`}
                     >
-                      {voucher.isUsed ? 'Used' : 'Available'}
+                      {voucher.status}
                     </span>
                   </div>
                 ))}
@@ -322,7 +415,6 @@ export default function VouchersPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
-

@@ -45,13 +45,21 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Generate reset link
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const resetLink = `${baseUrl}/auth/reset-password?token=${token}&role=${user.role.toLowerCase()}`
+
     // TODO: Send email with reset link
-    // const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`
     // await sendPasswordResetEmail(user.email, resetLink)
+    
+    // In development, return the token so it can be displayed in UI
+    // In production, this should NOT be returned for security
+    const isDevelopment = process.env.NODE_ENV === 'development'
 
     return NextResponse.json({
       success: true,
       message: 'If an account exists, a password reset link has been sent.',
+      ...(isDevelopment && { token, resetLink }), // Only in development
     })
   } catch (error) {
     console.error('Error requesting password reset:', error)

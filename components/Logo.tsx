@@ -15,10 +15,10 @@ export default function Logo({
   variant = 'default'
 }: LogoProps) {
   const sizeClasses = {
-    sm: { image: 'h-8 w-8', text: 'text-lg' },
-    md: { image: 'h-12 w-12', text: 'text-2xl' },
-    lg: { image: 'h-16 w-16', text: 'text-3xl' },
-    xl: { image: 'h-20 w-20', text: 'text-4xl' }
+    sm: { image: 'h-10 w-10', text: 'text-xl' },
+    md: { image: 'h-14 w-14', text: 'text-2xl' },
+    lg: { image: 'h-20 w-20 sm:h-24 sm:w-24', text: 'text-3xl sm:text-4xl' },
+    xl: { image: 'h-28 w-28 sm:h-32 sm:w-32', text: 'text-4xl sm:text-5xl' }
   }
 
   const currentSize = sizeClasses[size]

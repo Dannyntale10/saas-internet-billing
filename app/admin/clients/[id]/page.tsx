@@ -48,12 +48,7 @@ export default function CustomizeClient() {
 
   const fetchNotes = async () => {
     try {
-      const token = localStorage.getItem('adminToken')
-      const res = await fetch(`/api/admin/clients/${clientId}/notes`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const res = await fetch(`/api/admin/clients/${clientId}/notes`)
       if (res.ok) {
         const data = await res.json()
         setNotes(data)
@@ -68,12 +63,10 @@ export default function CustomizeClient() {
     if (!newNote.trim()) return
 
     try {
-      const token = localStorage.getItem('adminToken')
       const res = await fetch(`/api/admin/clients/${clientId}/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ note: newNote, isPrivate }),
       })
@@ -90,16 +83,10 @@ export default function CustomizeClient() {
 
   const fetchClient = async () => {
     try {
-      const token = localStorage.getItem('adminToken')
-      const res = await fetch(`/api/admin/clients/${clientId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const res = await fetch(`/api/admin/clients/${clientId}`)
 
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
         return
       }
 
@@ -145,31 +132,29 @@ export default function CustomizeClient() {
     setSaving(true)
 
     try {
-      const token = localStorage.getItem('adminToken')
       const res = await fetch(`/api/admin/clients/${clientId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       })
 
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
         return
       }
 
       if (res.ok) {
         alert('Client updated successfully!')
-        router.push('/admin/dashboard')
+        router.push('/admin/clients')
       } else {
         const data = await res.json()
         alert(data.error || 'Failed to update client')
       }
-    } catch (error) {
-      alert('An error occurred. Please try again.')
+    } catch (error: any) {
+      console.error('Error updating client:', error)
+      alert(error.message || 'An error occurred. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -296,14 +281,18 @@ export default function CustomizeClient() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+                <Button 
+                  type="submit" 
+                  disabled={saving} 
+                  className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+                >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto border-2 border-gray-400 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-semibold"
                 >
                   Cancel
                 </Button>
@@ -311,7 +300,7 @@ export default function CustomizeClient() {
                   type="button"
                   variant="outline"
                   onClick={() => window.open(`/?client=${clientId}`, '_blank')}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto border-2 border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-700 dark:hover:border-blue-500 transition-all font-bold"
                 >
                   Preview Client Page
                 </Button>
@@ -348,7 +337,12 @@ export default function CustomizeClient() {
                   />
                   <label htmlFor="private" className="text-sm text-gray-300">Private note (only visible to you)</label>
                 </div>
-                <Button type="submit" className="w-full sm:w-auto">Add Note</Button>
+                <Button 
+                  type="submit" 
+                  className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+                >
+                  Add Note
+                </Button>
               </div>
             </form>
 

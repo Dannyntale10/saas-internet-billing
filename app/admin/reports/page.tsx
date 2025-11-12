@@ -2,53 +2,53 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
-import { Logo } from '@/components/ui/logo'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 
 interface ReportData {
-  clients: Array<{ name: string; totalTransactions: number; totalRevenue: number }>
-  packages: Array<{ name: string; count: number; revenue: number }>
-  transactions: Array<{ date: string; count: number; revenue: number }>
-  vouchers: Array<{ code: string; package: string; status: string; createdAt: string }>
+  clients?: Array<{ name: string; totalTransactions: number; totalRevenue: number }>
+  packages?: Array<{ name: string; count: number; revenue: number }>
+  transactions?: Array<{ date: string; count: number; revenue: number }>
+  vouchers?: Array<{ code: string; name: string; status: string; createdAt: string }>
 }
 
 export default function ReportsPage() {
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
   const [reportType, setReportType] = useState<'revenue' | 'clients' | 'packages' | 'vouchers'>('revenue')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [reportData, setReportData] = useState<ReportData | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
+    if (status === 'loading') return
+
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/auth/login?role=admin')
       return
     }
-  }, [router])
+  }, [session, status, router])
 
   const generateReport = async () => {
     setLoading(true)
+    setError(null)
     try {
-      const token = localStorage.getItem('adminToken')
       const params = new URLSearchParams()
       if (dateFrom) params.append('from', dateFrom)
       if (dateTo) params.append('to', dateTo)
       params.append('type', reportType)
 
-      const res = await fetch(`/api/admin/reports?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const res = await fetch(`/api/admin/reports?${params.toString()}`)
 
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
         return
       }
 
@@ -56,11 +56,13 @@ export default function ReportsPage() {
         const data = await res.json()
         setReportData(data)
       } else {
-        alert('Failed to generate report')
+        const errorData = await res.json()
+        setError(new Error(errorData.error || 'Failed to generate report'))
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to generate report')
+      setError(error)
       console.error('Error generating report:', error)
-      alert('An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -94,7 +96,7 @@ export default function ReportsPage() {
       csv = [
         ['Code', 'Package', 'Status', 'Created At'].join(','),
         ...reportData.vouchers.map((v) =>
-          [v.code, v.package, v.status, v.createdAt].join(',')
+          [v.code, v.name || 'N/A', v.status, v.createdAt].join(',')
         ),
       ].join('\n')
       filename = `vouchers-report-${new Date().toISOString().split('T')[0]}.csv`
@@ -110,32 +112,55 @@ export default function ReportsPage() {
     }
   }
 
+  if (status === 'loading') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <LoadingSpinner size="lg" text="Loading..." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!session || session.user.role !== 'ADMIN') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ErrorDisplay error="Access denied. Please login as admin." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-brand-dark p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Logo />
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">Reports</h1>
-          </div>
-          <Link href="/admin/dashboard">
-            <Button variant="outline" className="w-full sm:w-auto">Back to Dashboard</Button>
-          </Link>
+    <DashboardLayout>
+      <div className="mobile-padding">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">Reports</h1>
+          <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+            Generate and export system reports
+          </p>
         </div>
 
+        {error && (
+          <div className="mb-6">
+            <ErrorDisplay error={error} onRetry={generateReport} />
+          </div>
+        )}
+
         {/* Report Generator */}
-        <Card className="mb-6">
+        <Card className="mb-6 animate-slide-up">
           <CardHeader>
             <CardTitle>Generate Report</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Report Type
                 </label>
                 <select
-                  className="flex h-10 w-full rounded-button border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent"
+                  className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value as any)}
                 >
@@ -147,7 +172,7 @@ export default function ReportsPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     From Date
                   </label>
                   <Input
@@ -157,7 +182,7 @@ export default function ReportsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     To Date
                   </label>
                   <Input
@@ -167,7 +192,11 @@ export default function ReportsPage() {
                   />
                 </div>
               </div>
-              <Button onClick={generateReport} disabled={loading} className="w-full sm:w-auto">
+              <Button 
+                onClick={generateReport} 
+                disabled={loading} 
+                className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+              >
                 {loading ? 'Generating...' : 'Generate Report'}
               </Button>
             </div>
@@ -176,7 +205,7 @@ export default function ReportsPage() {
 
         {/* Report Results */}
         {reportData && (
-          <Card>
+          <Card className="animate-slide-up">
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <CardTitle>
@@ -185,7 +214,11 @@ export default function ReportsPage() {
                   {reportType === 'packages' && 'Packages Report'}
                   {reportType === 'vouchers' && 'Vouchers Report'}
                 </CardTitle>
-                <Button onClick={() => handleExport(reportType)} variant="outline">
+                <Button 
+                  onClick={() => handleExport(reportType)} 
+                  variant="outline"
+                  className="border-2 border-green-600 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:border-green-700 dark:hover:border-green-500 transition-all font-bold shadow-lg hover:shadow-xl"
+                >
                   Export CSV
                 </Button>
               </div>
@@ -196,13 +229,13 @@ export default function ReportsPage() {
                   {reportData.transactions.map((t, i) => (
                     <div
                       key={i}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-background-light p-4 rounded-button"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
                     >
                       <div>
-                        <p className="text-white font-medium">{t.date}</p>
-                        <p className="text-sm text-gray-400">{t.count} transactions</p>
+                        <p className="text-gray-900 dark:text-white font-medium">{t.date}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{t.count} transactions</p>
                       </div>
-                      <p className="text-white font-bold">UGX {t.revenue.toLocaleString()}</p>
+                      <p className="text-gray-900 dark:text-white font-bold">UGX {t.revenue.toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
@@ -213,13 +246,13 @@ export default function ReportsPage() {
                   {reportData.clients.map((c, i) => (
                     <div
                       key={i}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-background-light p-4 rounded-button"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
                     >
                       <div>
-                        <p className="text-white font-medium">{c.name}</p>
-                        <p className="text-sm text-gray-400">{c.totalTransactions} transactions</p>
+                        <p className="text-gray-900 dark:text-white font-medium">{c.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{c.totalTransactions} transactions</p>
                       </div>
-                      <p className="text-white font-bold">UGX {c.totalRevenue.toLocaleString()}</p>
+                      <p className="text-gray-900 dark:text-white font-bold">UGX {c.totalRevenue.toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
@@ -230,13 +263,13 @@ export default function ReportsPage() {
                   {reportData.packages.map((p, i) => (
                     <div
                       key={i}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-background-light p-4 rounded-button"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
                     >
                       <div>
-                        <p className="text-white font-medium">{p.name}</p>
-                        <p className="text-sm text-gray-400">{p.count} sales</p>
+                        <p className="text-gray-900 dark:text-white font-medium">{p.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{p.count} sales</p>
                       </div>
-                      <p className="text-white font-bold">UGX {p.revenue.toLocaleString()}</p>
+                      <p className="text-gray-900 dark:text-white font-bold">UGX {p.revenue.toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
@@ -247,13 +280,13 @@ export default function ReportsPage() {
                   {reportData.vouchers.map((v, i) => (
                     <div
                       key={i}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-background-light p-4 rounded-button"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
                     >
                       <div>
-                        <p className="text-white font-medium font-mono">{v.code}</p>
-                        <p className="text-sm text-gray-400">{v.package} • {v.status}</p>
+                        <p className="text-gray-900 dark:text-white font-medium font-mono">{v.code}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{v.name || 'N/A'} • {v.status}</p>
                       </div>
-                      <p className="text-xs text-gray-500">{v.createdAt}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">{new Date(v.createdAt).toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
@@ -262,7 +295,6 @@ export default function ReportsPage() {
           </Card>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
-

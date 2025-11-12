@@ -2,62 +2,67 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
-import { Logo } from '@/components/ui/logo'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 
 interface Transaction {
   id: string
   amount: number
   currency: string
   status: string
-  paymentMethod: string | null
+  method: string
   createdAt: string
-  user: { email: string } | null
-  package: { name: string } | null
+  user?: { email: string; name: string | null }
+  voucher?: { code: string; name: string | null }
 }
 
 export default function TransactionsPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<string>('all')
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
+    if (status === 'loading') return
+
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/auth/login?role=admin')
       return
     }
 
     fetchTransactions()
-  }, [router])
+  }, [session, status, router])
 
   const fetchTransactions = async () => {
     setLoading(true)
+    setError(null)
     try {
-      const token = localStorage.getItem('adminToken')
-      const res = await fetch('/api/admin/transactions', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const res = await fetch('/api/admin/transactions')
 
-      if (res.status === 401) {
-        localStorage.removeItem('adminToken')
-        router.push('/admin/login')
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
         return
       }
 
       if (res.ok) {
         const data = await res.json()
         setTransactions(data)
+      } else {
+        const errorData = await res.json()
+        setError(new Error(errorData.error || 'Failed to fetch transactions'))
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch transactions')
+      setError(error)
       console.error('Error fetching transactions:', error)
     } finally {
       setLoading(false)
@@ -66,16 +71,16 @@ export default function TransactionsPage() {
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Amount', 'Currency', 'Status', 'Payment Method', 'User', 'Package', 'Date'].join(','),
-      ...transactions.map((t) =>
+      ['ID', 'Amount', 'Currency', 'Status', 'Payment Method', 'User', 'Voucher', 'Date'].join(','),
+      ...filteredTransactions.map((t) =>
         [
           t.id,
           t.amount,
           t.currency,
           t.status,
-          t.paymentMethod || 'N/A',
+          t.method || 'N/A',
           t.user?.email || 'N/A',
-          t.package?.name || 'N/A',
+          t.voucher?.code || 'N/A',
           new Date(t.createdAt).toLocaleString(),
         ].join(',')
       ),
@@ -93,7 +98,7 @@ export default function TransactionsPage() {
     const matchesSearch =
       t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.package?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      t.voucher?.code.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || t.status === statusFilter
     const matchesDate =
       dateFilter === 'all' ||
@@ -108,29 +113,56 @@ export default function TransactionsPage() {
   })
 
   const totalRevenue = filteredTransactions
-    .filter((t) => t.status === 'completed')
+    .filter((t) => t.status === 'COMPLETED')
     .reduce((sum, t) => sum + t.amount, 0)
 
+  if (status === 'loading') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <LoadingSpinner size="lg" text="Loading..." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!session || session.user.role !== 'ADMIN') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ErrorDisplay error="Access denied. Please login as admin." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-brand-dark p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <DashboardLayout>
+      <div className="mobile-padding">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <Logo />
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">Transactions</h1>
+            <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">Transactions</h1>
+            <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+              View and manage all payment transactions
+            </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Link href="/admin/dashboard">
-              <Button variant="outline" className="w-full sm:w-auto">Back to Dashboard</Button>
-            </Link>
-            <Button onClick={handleExport} variant="outline" className="w-full sm:w-auto">
-              Export CSV
-            </Button>
-          </div>
+          <Button 
+            onClick={handleExport} 
+            variant="outline" 
+            className="w-full sm:w-auto border-2 border-green-600 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:border-green-700 dark:hover:border-green-500 transition-all font-bold shadow-lg hover:shadow-xl"
+          >
+            Export CSV
+          </Button>
         </div>
 
+        {error && (
+          <div className="mb-6">
+            <ErrorDisplay error={error} onRetry={fetchTransactions} />
+          </div>
+        )}
+
         {/* Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 animate-slide-up">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Input
@@ -140,17 +172,18 @@ export default function TransactionsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <select
-                className="flex h-10 w-full rounded-button border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent"
+                className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
+                <option value="PENDING">Pending</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="FAILED">Failed</option>
+                <option value="REFUNDED">Refunded</option>
               </select>
               <select
-                className="flex h-10 w-full rounded-button border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent"
+                className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
               >
@@ -160,47 +193,49 @@ export default function TransactionsPage() {
                 <option value="month">Last 30 Days</option>
               </select>
             </div>
-            <div className="mt-4 text-sm text-gray-400">
-              Total Revenue (filtered): {filteredTransactions.filter((t) => t.status === 'completed').length} transactions - UGX {totalRevenue.toLocaleString()}
+            <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+              Total Revenue (filtered): {filteredTransactions.filter((t) => t.status === 'COMPLETED').length} transactions - {filteredTransactions[0]?.currency || 'UGX'} {totalRevenue.toLocaleString()}
             </div>
           </CardContent>
         </Card>
 
         {/* Transactions List */}
-        <Card>
+        <Card className="animate-slide-up">
           <CardHeader>
             <CardTitle>All Transactions ({filteredTransactions.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-gray-400 text-center py-8">Loading...</p>
+              <div className="py-8 text-center">
+                <LoadingSpinner size="md" text="Loading transactions..." />
+              </div>
             ) : filteredTransactions.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">No transactions found.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">No transactions found.</p>
             ) : (
               <div className="space-y-2">
                 {filteredTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-background-light p-4 rounded-button"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg"
                   >
                     <div className="flex-1">
-                      <p className="text-white font-medium">
+                      <p className="text-gray-900 dark:text-white font-medium">
                         {transaction.currency} {transaction.amount.toLocaleString()}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        {transaction.package?.name || 'N/A'} • {transaction.user?.email || 'Guest'} • {transaction.paymentMethod || 'N/A'}
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {transaction.voucher?.name || transaction.voucher?.code || 'N/A'} • {transaction.user?.email || 'Guest'} • {transaction.method || 'N/A'}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                         {new Date(transaction.createdAt).toLocaleString()}
                       </p>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-button text-xs ${
-                        transaction.status === 'completed'
-                          ? 'bg-green-500/20 text-green-300'
-                          : transaction.status === 'pending'
-                          ? 'bg-yellow-500/20 text-yellow-300'
-                          : 'bg-red-500/20 text-red-300'
+                      className={`px-3 py-1 rounded-lg text-xs ${
+                        transaction.status === 'COMPLETED'
+                          ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                          : transaction.status === 'PENDING'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
+                          : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                       }`}
                     >
                       {transaction.status}
@@ -212,7 +247,6 @@ export default function TransactionsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
-

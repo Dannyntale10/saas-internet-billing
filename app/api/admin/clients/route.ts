@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, subdomain, phone1, phone2, whatsapp, email, address } = body
+    const { name, email, phone, password } = body
 
     if (!name || name.trim() === '') {
       return NextResponse.json(
@@ -53,11 +53,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!email || email.trim() === '') {
+      return NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400 }
+      )
+    }
+
     // Create client as User with CLIENT role
-    // Generate email if not provided
-    const clientEmail = email && email.trim() !== '' 
-      ? email.trim() 
-      : `${name.toLowerCase().replace(/\s+/g, '.')}@client.local`
+    const clientEmail = email.trim().toLowerCase()
     
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
@@ -72,7 +76,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user with CLIENT role
-    const hashedPassword = await require('bcryptjs').hash('changeme123', 10)
+    const clientPassword = password && password.trim() !== '' 
+      ? password.trim() 
+      : 'changeme123'
+    const hashedPassword = await require('bcryptjs').hash(clientPassword, 10)
     
     const client = await prisma.user.create({
       data: {
@@ -80,7 +87,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name: name.trim(),
         role: 'CLIENT',
-        phone: phone1 && phone1.trim() !== '' ? phone1.trim() : null,
+        phone: phone && phone.trim() !== '' ? phone.trim() : null,
         isActive: true,
       },
     })

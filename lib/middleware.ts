@@ -11,7 +11,16 @@ export async function verifyAuth(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
+    console.log('🔍 verifyAuth - Session check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      userRole: session?.user?.role,
+      userEmail: session?.user?.email,
+    })
+    
     if (!session || !session.user) {
+      console.log('❌ verifyAuth - No session or user')
       return { error: 'Unauthorized', status: 401 }
     }
 
@@ -21,13 +30,26 @@ export async function verifyAuth(request: NextRequest) {
       select: { id: true, email: true, name: true, role: true, isActive: true, parentClientId: true }
     })
 
+    console.log('🔍 verifyAuth - Database user check:', {
+      found: !!user,
+      role: user?.role,
+      isActive: user?.isActive,
+    })
+
     if (!user) {
+      console.log('❌ verifyAuth - User not found in database')
       return { error: 'User not found', status: 401 }
     }
 
     if (!user.isActive) {
+      console.log('❌ verifyAuth - User account is inactive')
       return { error: 'Account is inactive', status: 403 }
     }
+
+    console.log('✅ verifyAuth - Authentication successful:', {
+      userId: user.id,
+      role: user.role,
+    })
 
     return { 
       user: {
@@ -40,7 +62,7 @@ export async function verifyAuth(request: NextRequest) {
       session 
     }
   } catch (error) {
-    console.error('Authentication error:', error)
+    console.error('❌ verifyAuth - Authentication error:', error)
     return { error: 'Authentication failed', status: 401 }
   }
 }
@@ -52,13 +74,22 @@ export async function verifyAdmin(request: NextRequest) {
   const auth = await verifyAuth(request)
   
   if ('error' in auth) {
+    console.log('❌ verifyAdmin - Auth failed:', auth.error)
     return auth
   }
 
+  console.log('🔍 verifyAdmin - Checking role:', {
+    userRole: auth.user.role,
+    required: 'ADMIN',
+    match: auth.user.role === 'ADMIN',
+  })
+
   if (auth.user.role !== 'ADMIN') {
+    console.log('❌ verifyAdmin - Access denied. User role:', auth.user.role)
     return { error: 'Access denied. Admin privileges required.', status: 403 }
   }
 
+  console.log('✅ verifyAdmin - Admin access granted')
   return auth
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
@@ -78,8 +78,18 @@ export default function PortalCustomizePage() {
   useEffect(() => {
     if (status === 'loading') return
 
-    if (!session || session.user.role !== 'CLIENT') {
-      router.push('/auth/login')
+    if (!session) {
+      router.push('/auth/login?role=client')
+      return
+    }
+
+    // STRICT: Only CLIENT users can access client pages
+    const userRole = (session.user.role as string)?.toUpperCase()
+    if (userRole !== 'CLIENT') {
+      console.error('❌ Access denied: User role', userRole, 'cannot access client pages')
+      signOut({ redirect: false, callbackUrl: `/auth/login?role=client` }).then(() => {
+        router.push(`/auth/login?role=client&error=access_denied`)
+      })
       return
     }
 
@@ -178,12 +188,20 @@ export default function PortalCustomizePage() {
               Customize your WiFi captive portal page
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handlePreview} variant="outline">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              onClick={handlePreview} 
+              variant="outline"
+              className="w-full sm:w-auto border-2 border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-700 dark:hover:border-blue-500 transition-all font-bold shadow-lg hover:shadow-xl"
+            >
               <Eye className="h-4 w-4 mr-2" />
               Preview
             </Button>
-            <Button onClick={handleSave} disabled={saving} variant="gradient">
+            <Button 
+              onClick={handleSave} 
+              disabled={saving} 
+              className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+            >
               <Save className="h-4 w-4 mr-2" />
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
@@ -198,20 +216,25 @@ export default function PortalCustomizePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Company Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Company Name *
+                </label>
                 <Input
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                   placeholder="Your Company Name"
                   required
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Logo</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Logo
+                </label>
                 <div className="flex items-center gap-4">
                   {formData.logoUrl && (
-                    <div className="relative h-16 w-16 rounded-lg overflow-hidden border">
+                    <div className="relative h-16 w-16 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600">
                       <img src={formData.logoUrl} alt="Logo" className="object-contain w-full h-full" />
                     </div>
                   )}
@@ -222,7 +245,11 @@ export default function PortalCustomizePage() {
                       onChange={handleLogoUpload}
                       className="hidden"
                     />
-                    <Button variant="outline" type="button">
+                    <Button 
+                      variant="outline" 
+                      type="button"
+                      className="border-2 border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-700 dark:hover:border-blue-500 transition-all font-bold"
+                    >
                       <UploadIcon className="h-4 w-4 mr-2" />
                       Upload Logo
                     </Button>
@@ -231,11 +258,14 @@ export default function PortalCustomizePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Welcome Message</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Welcome Message
+                </label>
                 <Input
                   value={formData.welcomeMessage}
                   onChange={(e) => setFormData({ ...formData, welcomeMessage: e.target.value })}
                   placeholder="Please buy a package to use the hotspot service"
+                  className="w-full"
                 />
               </div>
             </CardContent>
@@ -248,7 +278,7 @@ export default function PortalCustomizePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   Phone 1
                 </label>
@@ -256,11 +286,12 @@ export default function PortalCustomizePage() {
                   value={formData.phone1}
                   onChange={(e) => setFormData({ ...formData, phone1: e.target.value })}
                   placeholder="+256702772200"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   Phone 2
                 </label>
@@ -268,11 +299,12 @@ export default function PortalCustomizePage() {
                   value={formData.phone2}
                   onChange={(e) => setFormData({ ...formData, phone2: e.target.value })}
                   placeholder="+256753908001"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
                 </label>
@@ -280,11 +312,12 @@ export default function PortalCustomizePage() {
                   value={formData.whatsapp}
                   onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                   placeholder="+256702772200"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Mail className="h-4 w-4" />
                   Email
                 </label>
@@ -293,6 +326,7 @@ export default function PortalCustomizePage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="info@company.com"
+                  className="w-full"
                 />
               </div>
             </CardContent>
@@ -309,15 +343,16 @@ export default function PortalCustomizePage() {
             </CardHeader>
             <CardContent>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   MTN Mobile Money Number
                 </label>
                 <Input
                   value={formData.mtnMobileMoneyNumber || ''}
                   onChange={(e) => setFormData({ ...formData, mtnMobileMoneyNumber: e.target.value })}
                   placeholder="+256702772200"
+                  className="w-full"
                 />
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   This number will receive MTN Mobile Money payments from your customers when they purchase vouchers or packages.
                 </p>
               </div>
@@ -335,15 +370,16 @@ export default function PortalCustomizePage() {
             </CardHeader>
             <CardContent>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Airtel Money Number
                 </label>
                 <Input
                   value={formData.airtelMoneyNumber || ''}
                   onChange={(e) => setFormData({ ...formData, airtelMoneyNumber: e.target.value })}
                   placeholder="+256753908001"
+                  className="w-full"
                 />
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   This number will receive Airtel Money payments from your customers when they purchase vouchers or packages.
                 </p>
               </div>
@@ -357,7 +393,7 @@ export default function PortalCustomizePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Facebook className="h-4 w-4" />
                   Facebook URL
                 </label>
@@ -365,11 +401,12 @@ export default function PortalCustomizePage() {
                   value={formData.facebook}
                   onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
                   placeholder="https://facebook.com/yourpage"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Twitter className="h-4 w-4" />
                   Twitter URL
                 </label>
@@ -377,11 +414,12 @@ export default function PortalCustomizePage() {
                   value={formData.twitter}
                   onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
                   placeholder="https://twitter.com/yourhandle"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Instagram className="h-4 w-4" />
                   Instagram URL
                 </label>
@@ -389,11 +427,12 @@ export default function PortalCustomizePage() {
                   value={formData.instagram}
                   onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
                   placeholder="https://instagram.com/yourhandle"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Linkedin className="h-4 w-4" />
                   LinkedIn URL
                 </label>
@@ -401,11 +440,12 @@ export default function PortalCustomizePage() {
                   value={formData.linkedin}
                   onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                   placeholder="https://linkedin.com/company/yourcompany"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   Website
                 </label>
@@ -413,6 +453,7 @@ export default function PortalCustomizePage() {
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   placeholder="https://yourwebsite.com"
+                  className="w-full"
                 />
               </div>
             </CardContent>
@@ -425,52 +466,61 @@ export default function PortalCustomizePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Primary Color (Buttons)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Primary Color (Buttons)
+                </label>
                 <div className="flex gap-2">
                   <Input
                     type="color"
                     value={formData.primaryColor}
                     onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-20 h-10 cursor-pointer"
                   />
                   <Input
                     value={formData.primaryColor}
                     onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
                     placeholder="#76D74C"
+                    className="flex-1"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Secondary Color (Text)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Secondary Color (Text)
+                </label>
                 <div className="flex gap-2">
                   <Input
                     type="color"
                     value={formData.secondaryColor}
                     onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-20 h-10 cursor-pointer"
                   />
                   <Input
                     value={formData.secondaryColor}
                     onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
                     placeholder="#1e293b"
+                    className="flex-1"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Background Color</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Background Color
+                </label>
                 <div className="flex gap-2">
                   <Input
                     type="color"
                     value={formData.backgroundColor}
                     onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-20 h-10 cursor-pointer"
                   />
                   <Input
                     value={formData.backgroundColor}
                     onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
                     placeholder="#0f172a"
+                    className="flex-1"
                   />
                 </div>
               </div>
@@ -483,73 +533,89 @@ export default function PortalCustomizePage() {
               <CardTitle>Portal Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Show Free Trial</label>
+              <div className="flex items-center justify-between p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-brand-green transition-colors">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  Show Free Trial
+                </label>
                 <input
                   type="checkbox"
                   checked={formData.showFreeTrial}
                   onChange={(e) => setFormData({ ...formData, showFreeTrial: e.target.checked })}
-                  className="h-4 w-4 text-brand-green"
+                  className="h-5 w-5 text-brand-green border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-green cursor-pointer"
                 />
               </div>
 
               {formData.showFreeTrial && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Free Trial Text</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Free Trial Text
+                  </label>
                   <Input
                     value={formData.freeTrialText}
                     onChange={(e) => setFormData({ ...formData, freeTrialText: e.target.value })}
                     placeholder="Free trial available, click here."
+                    className="w-full"
                   />
                 </div>
               )}
 
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Show Voucher Input</label>
+              <div className="flex items-center justify-between p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-brand-green transition-colors">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  Show Voucher Input
+                </label>
                 <input
                   type="checkbox"
                   checked={formData.showVoucherInput}
                   onChange={(e) => setFormData({ ...formData, showVoucherInput: e.target.checked })}
-                  className="h-4 w-4 text-brand-green"
+                  className="h-5 w-5 text-brand-green border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-green cursor-pointer"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Show Packages</label>
+              <div className="flex items-center justify-between p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-brand-green transition-colors">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  Show Packages
+                </label>
                 <input
                   type="checkbox"
                   checked={formData.showPackages}
                   onChange={(e) => setFormData({ ...formData, showPackages: e.target.checked })}
-                  className="h-4 w-4 text-brand-green"
+                  className="h-5 w-5 text-brand-green border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-green cursor-pointer"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Show Payment Methods</label>
+              <div className="flex items-center justify-between p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-brand-green transition-colors">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  Show Payment Methods
+                </label>
                 <input
                   type="checkbox"
                   checked={formData.showPaymentMethods}
                   onChange={(e) => setFormData({ ...formData, showPaymentMethods: e.target.checked })}
-                  className="h-4 w-4 text-brand-green"
+                  className="h-5 w-5 text-brand-green border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-green cursor-pointer"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Footer Text</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Footer Text
+                </label>
                 <Input
                   value={formData.footerText}
                   onChange={(e) => setFormData({ ...formData, footerText: e.target.value })}
                   placeholder="Powered by JENDA MOBILITY"
+                  className="w-full"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Show Powered By</label>
+              <div className="flex items-center justify-between p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-brand-green transition-colors">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  Show Powered By
+                </label>
                 <input
                   type="checkbox"
                   checked={formData.showPoweredBy}
                   onChange={(e) => setFormData({ ...formData, showPoweredBy: e.target.checked })}
-                  className="h-4 w-4 text-brand-green"
+                  className="h-5 w-5 text-brand-green border-2 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-brand-green cursor-pointer"
                 />
               </div>
             </CardContent>

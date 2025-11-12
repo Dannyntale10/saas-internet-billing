@@ -2,75 +2,104 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/input'
-import { Logo } from '@/components/ui/logo'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 
 interface User {
   id: string
   email: string
   name: string | null
   role: string
-  permissions: string | null
   isActive: boolean
   lastLogin: string | null
   createdAt: string
 }
 
 export default function UsersPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
-  const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken')
-    if (!token) {
-      router.push('/admin/login')
+    if (status === 'loading') return
+
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/auth/login?role=admin')
       return
     }
+
     fetchUsers()
-  }, [router, roleFilter])
+  }, [session, status, router, roleFilter])
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('adminToken')
+      setLoading(true)
+      setError(null)
       const params = new URLSearchParams()
       if (searchTerm) params.append('search', searchTerm)
       if (roleFilter) params.append('role', roleFilter)
 
-      const res = await fetch(`/api/admin/users?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch(`/api/admin/users?${params}`)
+
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
+        return
+      }
 
       if (res.ok) {
         const data = await res.json()
         setUsers(data)
+      } else {
+        const errorData = await res.json()
+        setError(new Error(errorData.error || 'Failed to fetch users'))
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch users')
+      setError(error)
       console.error('Error fetching users:', error)
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    if (searchTerm) {
+      const timeout = setTimeout(() => {
+        fetchUsers()
+      }, 300)
+      return () => clearTimeout(timeout)
+    } else {
+      fetchUsers()
+    }
+  }, [searchTerm])
+
   const handleDelete = async (id: string, email: string) => {
     if (!confirm(`Are you sure you want to delete user ${email}?`)) return
 
     try {
-      const token = localStorage.getItem('adminToken')
       const res = await fetch(`/api/admin/users/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       })
+
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
+        return
+      }
 
       if (res.ok) {
         fetchUsers()
       } else {
-        alert('Failed to delete user')
+        const data = await res.json()
+        alert(data.error || 'Failed to delete user')
       }
     } catch (error) {
       console.error('Error deleting user:', error)
@@ -80,21 +109,28 @@ export default function UsersPage() {
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      const token = localStorage.getItem('adminToken')
       const res = await fetch(`/api/admin/users/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ isActive: !isActive }),
       })
 
+      if (res.status === 401 || res.status === 403) {
+        router.push('/auth/login?role=admin')
+        return
+      }
+
       if (res.ok) {
         fetchUsers()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to update user')
       }
     } catch (error) {
       console.error('Error toggling user status:', error)
+      alert('Failed to update user')
     }
   }
 
@@ -103,18 +139,41 @@ export default function UsersPage() {
     (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  return (
-    <div className="min-h-screen bg-brand-dark">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
-            <p className="text-gray-400">Manage system users and their permissions</p>
-          </div>
-          <Link href="/admin/dashboard">
-            <Button variant="outline">Back to Dashboard</Button>
-          </Link>
+  if (status === 'loading') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <LoadingSpinner size="lg" text="Loading..." />
         </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!session || session.user.role !== 'ADMIN') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <ErrorDisplay error="Access denied. Please login as admin." />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="mobile-padding">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="mobile-heading font-bold text-gray-900 dark:text-white">User Management</h1>
+          <p className="mt-2 mobile-text text-gray-600 dark:text-gray-400">
+            Manage system users and their permissions
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6">
+            <ErrorDisplay error={error} onRetry={fetchUsers} />
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <Input
@@ -126,55 +185,56 @@ export default function UsersPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-4 py-2 rounded-button bg-brand-light text-white border border-brand-accent"
+            className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700"
           >
             <option value="">All Roles</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="client">Client</option>
+            <option value="ADMIN">Admin</option>
+            <option value="CLIENT">Client</option>
+            <option value="END_USER">End User</option>
           </select>
         </div>
 
-        <Card>
+        <Card className="animate-slide-up">
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-8 text-center text-gray-400">Loading...</div>
+              <div className="p-8 text-center">
+                <LoadingSpinner size="md" text="Loading users..." />
+              </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">No users found</div>
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">No users found</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-brand-light">
+                  <thead className="bg-gray-100 dark:bg-gray-800">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-white">Email</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-white">Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-white">Role</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-white">Status</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-white">Last Login</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-white">Actions</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white">Role</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white">Last Login</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-700">
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-brand-light/50">
-                        <td className="px-4 py-3 text-sm text-gray-300">{user.email}</td>
-                        <td className="px-4 py-3 text-sm text-gray-300">{user.name || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-300">
-                          <span className="px-2 py-1 rounded-button bg-brand-accent/20 text-brand-accent text-xs">
+                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">{user.email}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">{user.name || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
+                          <span className="px-2 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs">
                             {user.role}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded-button text-xs ${
+                          <span className={`px-2 py-1 rounded-lg text-xs ${
                             user.isActive
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
+                              ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                              : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                           }`}>
                             {user.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-400">
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                         </td>
                         <td className="px-4 py-3 text-sm">
@@ -183,7 +243,7 @@ export default function UsersPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleToggleActive(user.id, user.isActive)}
-                              className="w-full sm:w-auto"
+                              className="w-full sm:w-auto border-2 border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-700 dark:hover:border-blue-500 transition-all font-bold"
                             >
                               {user.isActive ? 'Deactivate' : 'Activate'}
                             </Button>
@@ -191,7 +251,7 @@ export default function UsersPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDelete(user.id, user.email)}
-                              className="w-full sm:w-auto text-red-400 border-red-400/50 hover:bg-red-500/20"
+                              className="w-full sm:w-auto border-2 border-red-600 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:border-red-700 dark:hover:border-red-500 transition-all font-bold"
                             >
                               Delete
                             </Button>
@@ -206,7 +266,6 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
-

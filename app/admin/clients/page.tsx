@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
@@ -28,8 +28,18 @@ export default function ClientsPage() {
   useEffect(() => {
     if (status === 'loading') return
 
-    if (!session || session.user.role !== 'ADMIN') {
-      router.push('/auth/login')
+    if (!session) {
+      router.push('/auth/login?role=admin')
+      return
+    }
+
+    // STRICT: Only ADMIN users can access admin pages
+    const userRole = (session.user.role as string)?.toUpperCase()
+    if (userRole !== 'ADMIN') {
+      console.error('❌ Access denied: User role', userRole, 'cannot access admin pages')
+      signOut({ redirect: false, callbackUrl: `/auth/login?role=admin` }).then(() => {
+        router.push(`/auth/login?role=admin&error=access_denied`)
+      })
       return
     }
 
@@ -79,8 +89,12 @@ export default function ClientsPage() {
               Manage your client accounts
             </p>
           </div>
-          <Link href="/admin/clients/create">
-            <Button variant="gradient" size="lg" className="w-full sm:w-auto">
+          <Link href="/admin/clients/new">
+            <Button 
+              variant="gradient" 
+              size="lg" 
+              className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
+            >
               <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Add Client
             </Button>
@@ -143,7 +157,10 @@ export default function ClientsPage() {
                     </div>
                     <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                       <Link href={`/admin/clients/${client.id}`}>
-                        <Button variant="outline" className="w-full">
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-2 border-green-600 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:border-green-700 dark:hover:border-green-500 transition-all font-semibold"
+                        >
                           View Details
                         </Button>
                       </Link>
@@ -165,9 +182,13 @@ export default function ClientsPage() {
               <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                 Get started by creating a new client account to manage their internet billing.
               </p>
-              <Link href="/admin/clients/create">
-                <Button variant="gradient" size="lg">
-                  <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              <Link href="/admin/clients/new">
+                <Button 
+                  variant="gradient" 
+                  size="lg"
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all px-8 py-4 text-lg border-2 border-green-400"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
                   Add Your First Client
                 </Button>
               </Link>
