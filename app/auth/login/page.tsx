@@ -213,123 +213,144 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      {/* Background Pattern with Green Accent */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, rgba(118, 215, 76, 0.3) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Gradient Orbs */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-green-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `linear-gradient(rgba(118, 215, 76, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(118, 215, 76, 0.1) 1px, transparent 1px)`,
+          backgroundSize: '50px 50px'
         }}></div>
       </div>
 
-      <div className="relative w-full max-w-md">
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header with Green Gradient (Brand Colors) */}
-          <div className="bg-gradient-to-r from-green-500 via-green-600 to-green-500 px-8 py-6">
-            <div className="flex items-center justify-center mb-4">
-              <div className="relative h-16 w-16">
-                <Image
-                  src="/logo.jpg"
-                  alt="JENDA MOBILITY Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
+      <div className="relative w-full max-w-md z-10">
+        {/* Main Card with Glassmorphism */}
+        <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+          {/* Header with Modern Gradient */}
+          <div className="relative bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 px-8 py-8 overflow-hidden">
+            {/* Animated Background Pattern */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.3) 1px, transparent 0)`,
+                backgroundSize: '30px 30px'
+              }}></div>
             </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-white mb-1">JENDA MOBILITY</h1>
-              <p className="text-green-100 text-sm">Internet Billing System</p>
+            
+            <div className="relative z-10">
+              {/* Logo */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="relative h-20 w-20 bg-white/20 rounded-2xl p-2 backdrop-blur-sm border border-white/30 shadow-lg">
+                  <Image
+                    src="/logo.jpg"
+                    alt="JENDA MOBILITY Logo"
+                    fill
+                    className="object-contain rounded-xl"
+                    priority
+                  />
+                </div>
+              </div>
+              
+              {/* Company Name */}
+              <div className="text-center">
+                <h1 className="text-3xl font-extrabold text-white mb-2 drop-shadow-lg">JENDA MOBILITY</h1>
+                <p className="text-green-50 text-sm font-medium">Internet Billing System</p>
+              </div>
             </div>
           </div>
 
           {/* Login Form */}
-          <div className="px-8 py-8">
-            {/* Role Badge */}
+          <div className="px-8 py-8 bg-white dark:bg-gray-900">
+            {/* Role Badge - Enhanced */}
             <div className="flex items-center justify-center mb-6">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
+              <div className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full shadow-md ${
                 isAdmin 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-green-100 text-green-700'
+                  ? 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' 
+                  : 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
               }`}>
                 {isAdmin ? (
                   <>
-                    <Shield className="h-4 w-4" />
-                    <span className="text-sm font-semibold">Admin Login</span>
+                    <Shield className="h-4.5 w-4.5" />
+                    <span className="text-sm font-bold">Admin Login</span>
                   </>
                 ) : (
                   <>
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm font-semibold">Client Login</span>
+                    <Users className="h-4.5 w-4.5" />
+                    <span className="text-sm font-bold">Client Login</span>
                   </>
                 )}
-        </div>
+              </div>
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
-              Welcome Back
-            </h2>
-            <p className="text-gray-600 text-center mb-8">
-              Sign in to access your dashboard
-            </p>
-
-            {/* Error Message */}
-          {error && (
-              <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
+            {/* Welcome Section */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Welcome Back
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Sign in to access your dashboard
+              </p>
             </div>
-          )}
 
-            <form onSubmit={handleSubmit} method="POST" className="space-y-6" noValidate>
-              {/* Email Field */}
-            <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Error Message - Enhanced */}
+            {error && (
+              <div className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-l-4 border-red-500 dark:border-red-400 p-4 rounded-r-xl flex items-start gap-3 shadow-sm animate-slide-in">
+                <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} method="POST" className="space-y-5" noValidate>
+              {/* Email Field - Enhanced */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2.5">
                   Email Address
-              </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-green-500 transition-colors" />
                   </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:focus:border-green-400 transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="you@example.com"
-              />
-            </div>
+                  />
+                </div>
               </div>
 
-              {/* Password Field */}
-            <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+              {/* Password Field - Enhanced */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2.5">
+                  Password
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-green-500 transition-colors" />
                   </div>
-              <input
-                id="password"
-                name="password"
+                  <input
+                    id="password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:focus:border-green-400 transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -337,70 +358,71 @@ function LoginContent() {
                       <Eye className="h-5 w-5" />
                     )}
                   </button>
-            </div>
-          </div>
+                </div>
+              </div>
 
-              {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-            >
-              {loading ? (
+              {/* Submit Button - Enhanced */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-green-500 via-green-600 to-emerald-600 hover:from-green-600 hover:via-green-700 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl hover:shadow-green-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2.5 group"
+              >
+                {loading ? (
                   <>
                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                     <span>Signing in...</span>
                   </>
-              ) : (
+                ) : (
                   <>
                     <span>Sign In</span>
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </>
-              )}
-            </button>
-                </form>
+                )}
+              </button>
+            </form>
 
-                {/* Forgot Password Link */}
-                <div className="mt-4 text-center">
-                  <Link 
-                    href={`/auth/forgot-password?role=${roleParam}`} 
-                    className="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
+            {/* Forgot Password Link - Enhanced */}
+            <div className="mt-5 text-center">
+              <Link 
+                href={`/auth/forgot-password?role=${roleParam}`} 
+                className="text-sm font-semibold text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors inline-flex items-center gap-1 hover:gap-2"
+              >
+                Forgot your password?
+              </Link>
+            </div>
 
-                {/* Sign Up Link */}
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-gray-600">
-                    Don't have an account?{' '}
-                    <Link 
-                      href={`/auth/signup?role=${roleParam}`} 
-                      className="font-semibold text-green-600 hover:text-green-700 transition-colors"
-                    >
-                      Sign up
-                    </Link>
-                  </p>
-                </div>
+            {/* Sign Up Link - Enhanced */}
+            <div className="mt-5 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Don't have an account?{' '}
+                <Link 
+                  href={`/auth/signup?role=${roleParam}`} 
+                  className="font-bold text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </p>
+            </div>
 
-                {/* Back to Home */}
-                <div className="mt-4 text-center">
-                  <Link 
-                    href="/" 
-                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    ← Back to home
-                  </Link>
-                </div>
+            {/* Back to Home - Enhanced */}
+            <div className="mt-5 text-center">
+              <Link 
+                href="/" 
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>←</span>
+                <span>Back to home</span>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Footer Note */}
-        <p className="mt-6 text-center text-sm text-white/60">
-          Secure login powered by NextAuth.js
+        {/* Footer Note - Enhanced */}
+        <p className="mt-6 text-center text-sm text-white/70 dark:text-white/50">
+          🔒 Secure login powered by NextAuth.js
         </p>
       </div>
     </div>

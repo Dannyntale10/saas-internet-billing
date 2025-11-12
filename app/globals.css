@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth theme transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
 @layer base {
   :root {
     /* JENDA MOBILITY Brand Colors - Modern 2025 Palette */
@@ -45,8 +52,8 @@
   }
 
   .dark {
-    /* Dark mode with brand colors */
-    --background: 220 50% 10%;
+    /* Dark mode with brand colors - 2025 Modern Design */
+    --background: 220 50% 8%;
     --foreground: 0 0% 98%;
     
     --primary: 142 76% 60%;
@@ -58,21 +65,25 @@
     --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
     
-    --card: 220 50% 15%;
+    --card: 220 50% 12%;
     --card-foreground: 0 0% 98%;
     
-    --popover: 220 50% 15%;
+    --popover: 220 50% 12%;
     --popover-foreground: 0 0% 98%;
     
-    --muted: 220 30% 20%;
+    --muted: 220 30% 18%;
     --muted-foreground: 220 10% 70%;
     
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 220 30% 25%;
-    --input: 220 30% 25%;
+    --border: 220 30% 22%;
+    --input: 220 30% 22%;
     --ring: 142 76% 60%;
+
+    /* Toast colors for dark mode */
+    --toast-bg: hsl(220 50% 12%);
+    --toast-color: hsl(0 0% 98%);
   }
 }
 
@@ -150,6 +161,68 @@
     background-clip: text;
   }
   
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Animations */
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+
+  @keyframes grid-move {
+    0% {
+      transform: translate(0, 0);
+    }
+    100% {
+      transform: translate(60px, 60px);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
+
   /* Modern button with glow effect */
   .btn-glow {
     position: relative;

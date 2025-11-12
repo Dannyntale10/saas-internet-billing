@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
-import { Ticket, Plus } from 'lucide-react'
+import { Ticket, Plus, CheckCircle2, XCircle, Clock, Filter } from 'lucide-react'
 
 interface Voucher {
   id: string
@@ -23,14 +23,26 @@ interface Voucher {
   speedLimit: number | null
   validUntil: string | null
   createdAt: string
+  usedAt?: string | null
+}
+
+interface VoucherStats {
+  total: number
+  active: number
+  used: number
+  expired: number
+  cancelled: number
 }
 
 export default function VouchersPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [vouchers, setVouchers] = useState<Voucher[]>([])
+  const [filteredVouchers, setFilteredVouchers] = useState<Voucher[]>([])
+  const [stats, setStats] = useState<VoucherStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -53,6 +65,15 @@ export default function VouchersPage() {
     fetchVouchers()
   }, [session, status, router])
 
+  // Filter vouchers based on status
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      setFilteredVouchers(vouchers)
+    } else {
+      setFilteredVouchers(vouchers.filter(v => v.status === statusFilter))
+    }
+  }, [statusFilter, vouchers])
+
   const fetchVouchers = async () => {
     try {
       setLoading(true)
@@ -66,7 +87,10 @@ export default function VouchersPage() {
 
       if (res.ok) {
         const data = await res.json()
-        setVouchers(data)
+        setVouchers(data.all || data)
+        setStats(data.stats || null)
+        // Set initial filtered vouchers
+        setFilteredVouchers(data.all || data)
       } else {
         const errorData = await res.json()
         setError(new Error(errorData.error || 'Failed to fetch vouchers'))
@@ -126,11 +150,86 @@ export default function VouchersPage() {
           </div>
         )}
 
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+            <Card className="animate-scale-in">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="animate-scale-in border-green-200 dark:border-green-800">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center justify-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                    Active
+                  </p>
+                  <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="animate-scale-in border-blue-200 dark:border-blue-800">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center justify-center gap-1">
+                    <Clock className="h-3 w-3 text-blue-600" />
+                    Used
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.used}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="animate-scale-in border-red-200 dark:border-red-800">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center justify-center gap-1">
+                    <XCircle className="h-3 w-3 text-red-600" />
+                    Expired
+                  </p>
+                  <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="animate-scale-in border-gray-200 dark:border-gray-800">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cancelled</p>
+                  <p className="text-2xl font-bold text-gray-600">{stats.cancelled}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filter */}
+        <Card className="mb-6 animate-slide-up">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Filter className="h-5 w-5 text-gray-500" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="flex-1 h-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              >
+                <option value="all">All Vouchers ({vouchers.length})</option>
+                <option value="ACTIVE">Active ({stats?.active || 0})</option>
+                <option value="USED">Used ({stats?.used || 0})</option>
+                <option value="EXPIRED">Expired ({stats?.expired || 0})</option>
+                <option value="CANCELLED">Cancelled ({stats?.cancelled || 0})</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+
         {loading ? (
           <div className="flex items-center justify-center min-h-[40vh]">
             <LoadingSpinner size="md" text="Loading vouchers..." />
           </div>
-        ) : vouchers.length === 0 ? (
+        ) : filteredVouchers.length === 0 ? (
           <Card className="animate-slide-up">
             <CardContent className="py-12 text-center">
               <Ticket className="h-12 w-12 mx-auto mb-4 text-gray-400" />
@@ -152,7 +251,7 @@ export default function VouchersPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {vouchers.map((voucher) => (
+            {filteredVouchers.map((voucher) => (
               <Card key={voucher.id} className="animate-scale-in">
                 <CardHeader>
                   <div className="flex justify-between items-start">

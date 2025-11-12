@@ -15,6 +15,7 @@ interface ClientStats {
   totalEndUsers: number
   activeVouchers: number
   totalRevenue: number
+  activeUsers?: number
   recentPayments: Array<{
     id: string
     amount: number
@@ -75,6 +76,7 @@ export default function ClientDashboard() {
           totalEndUsers: data.stats?.totalEndUsers || 0,
           activeVouchers: data.stats?.activeVouchers || 0,
           totalRevenue: data.stats?.totalRevenue || 0,
+          activeUsers: data.stats?.activeUsers || 0,
           recentPayments: data.recentPayments || []
         })
       } else {
@@ -142,8 +144,8 @@ export default function ClientDashboard() {
       trendUp: true,
     },
     {
-      name: 'Active Sessions',
-      value: '0',
+      name: 'Active Users',
+      value: stats.activeUsers || '0',
       icon: Activity,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100 dark:bg-orange-900/20',

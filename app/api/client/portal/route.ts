@@ -48,6 +48,7 @@ export async function PUT(request: NextRequest) {
       update: {
         companyName: body.companyName,
         logoUrl: body.logoUrl,
+        backgroundImageUrl: body.backgroundImageUrl,
         phone1: body.phone1,
         phone2: body.phone2,
         whatsapp: body.whatsapp,
@@ -75,6 +76,7 @@ export async function PUT(request: NextRequest) {
         clientId,
         companyName: body.companyName || 'My WiFi',
         logoUrl: body.logoUrl,
+        backgroundImageUrl: body.backgroundImageUrl,
         phone1: body.phone1,
         phone2: body.phone2,
         whatsapp: body.whatsapp,

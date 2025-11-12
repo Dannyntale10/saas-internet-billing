@@ -18,18 +18,39 @@ interface Transaction {
   method: string
   createdAt: string
   user?: { email: string; name: string | null }
-  voucher?: { code: string; name: string | null }
+  voucher?: { 
+    code: string
+    name: string | null
+    client?: {
+      id: string
+      name: string
+      email: string
+    }
+  }
+}
+
+interface ClientTotal {
+  clientId: string
+  clientName: string
+  clientEmail: string
+  totalAmount: number
+  completedAmount: number
+  pendingAmount: number
+  transactionCount: number
+  completedCount: number
 }
 
 export default function TransactionsPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [clientTotals, setClientTotals] = useState<ClientTotal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<'all' | 'byClient'>('byClient')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -55,7 +76,8 @@ export default function TransactionsPage() {
 
       if (res.ok) {
         const data = await res.json()
-        setTransactions(data)
+        setTransactions(data.transactions || data)
+        setClientTotals(data.clientTotals || [])
       } else {
         const errorData = await res.json()
         setError(new Error(errorData.error || 'Failed to fetch transactions'))
@@ -164,13 +186,23 @@ export default function TransactionsPage() {
         {/* Filters */}
         <Card className="mb-6 animate-slide-up">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Input
-                type="text"
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+              <div className="sm:col-span-2">
+                <Input
+                  type="text"
+                  placeholder="Search transactions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <select
+                className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as 'all' | 'byClient')}
+              >
+                <option value="byClient">View by Client</option>
+                <option value="all">View All Transactions</option>
+              </select>
               <select
                 className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
                 value={statusFilter}
@@ -182,6 +214,8 @@ export default function TransactionsPage() {
                 <option value="FAILED">Failed</option>
                 <option value="REFUNDED">Refunded</option>
               </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <select
                 className="flex h-10 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
                 value={dateFilter}
@@ -199,10 +233,76 @@ export default function TransactionsPage() {
           </CardContent>
         </Card>
 
-        {/* Transactions List */}
+        {/* Client Totals View */}
+        {viewMode === 'byClient' && (
+          <Card className="mb-6 animate-slide-up">
+            <CardHeader>
+              <CardTitle>Transactions by Client</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="py-8 text-center">
+                  <LoadingSpinner size="md" text="Loading transactions..." />
+                </div>
+              ) : clientTotals.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">No client transactions found.</p>
+              ) : (
+                <div className="space-y-4">
+                  {clientTotals.map((client) => (
+                    <div
+                      key={client.clientId}
+                      className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {client.clientName}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{client.clientEmail}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {filteredTransactions[0]?.currency || 'UGX'} {client.completedAmount.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Completed Revenue</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Transactions</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{client.transactionCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Completed</p>
+                          <p className="text-lg font-semibold text-green-600 dark:text-green-400">{client.completedCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Amount</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {filteredTransactions[0]?.currency || 'UGX'} {client.totalAmount.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Pending</p>
+                          <p className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                            {filteredTransactions[0]?.currency || 'UGX'} {client.pendingAmount.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* All Transactions List */}
         <Card className="animate-slide-up">
           <CardHeader>
-            <CardTitle>All Transactions ({filteredTransactions.length})</CardTitle>
+            <CardTitle>
+              {viewMode === 'byClient' ? 'All Transactions' : 'All Transactions'} ({filteredTransactions.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -224,6 +324,11 @@ export default function TransactionsPage() {
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {transaction.voucher?.name || transaction.voucher?.code || 'N/A'} • {transaction.user?.email || 'Guest'} • {transaction.method || 'N/A'}
+                        {transaction.voucher?.client && (
+                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                            • Client: {transaction.voucher.client.name}
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                         {new Date(transaction.createdAt).toLocaleString()}

@@ -188,6 +188,7 @@ model ClientPortal {
   companyName   String
   logoUrl       String?
   faviconUrl    String?
+  backgroundImageUrl String?  // Background image that tiles to fill the portal
   
   // Contact Information
   phone1        String?

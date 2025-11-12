@@ -108,15 +108,6 @@ export default function PackagesPage() {
               Manage internet packages
             </p>
           </div>
-          <Link href="/admin/vouchers">
-            <Button 
-              variant="gradient" 
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Package
-            </Button>
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -172,17 +163,8 @@ export default function PackagesPage() {
                 No packages found
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                Create packages by generating vouchers
+                Packages are created by clients when they generate vouchers. View client vouchers to see available packages.
               </p>
-              <Link href="/admin/vouchers">
-                <Button 
-                  variant="gradient" 
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all border-2 border-green-400"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Package
-                </Button>
-              </Link>
             </CardContent>
           </Card>
         )}

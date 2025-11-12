@@ -10,11 +10,12 @@ import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
 import { useToast } from '@/hooks/useToast'
-import { Save, Upload as UploadIcon, Eye, Facebook, Twitter, Instagram, Linkedin, Globe, Phone, Mail, MessageCircle, CreditCard } from 'lucide-react'
+import { Save, Upload as UploadIcon, Eye, Facebook, Twitter, Instagram, Linkedin, Globe, Phone, Mail, MessageCircle, CreditCard, Palette, Sparkles } from 'lucide-react'
 
 interface PortalData {
   companyName: string
   logoUrl?: string
+  backgroundImageUrl?: string
   phone1?: string
   phone2?: string
   whatsapp?: string
@@ -51,6 +52,7 @@ export default function PortalCustomizePage() {
   const [formData, setFormData] = useState<PortalData>({
     companyName: '',
     logoUrl: '',
+    backgroundImageUrl: '',
     phone1: '',
     phone2: '',
     whatsapp: '',
@@ -154,6 +156,32 @@ export default function PortalCustomizePage() {
     const reader = new FileReader()
     reader.onloadend = () => {
       setFormData({ ...formData, logoUrl: reader.result as string })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleBackgroundImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.showError('Please upload an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.showError('Image size should be less than 5MB')
+      return
+    }
+
+    // In production, upload to cloud storage
+    // For now, create a data URL
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setFormData({ ...formData, backgroundImageUrl: reader.result as string })
+      toast.showSuccess('Background image uploaded! It will tile to fill the entire background.')
     }
     reader.readAsDataURL(file)
   }
@@ -459,69 +487,236 @@ export default function PortalCustomizePage() {
             </CardContent>
           </Card>
 
-          {/* Colors & Theme */}
+          {/* Enhanced Colors & Theme */}
           <Card>
             <CardHeader>
-              <CardTitle>Colors & Theme</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Colors & Theme
+              </CardTitle>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Customize your portal's appearance with beautiful color combinations</p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Color Presets */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Primary Color (Buttons)
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  <Sparkles className="h-4 w-4 inline mr-2" />
+                  Quick Color Themes
                 </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                    className="w-20 h-10 cursor-pointer"
-                  />
-                  <Input
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                    placeholder="#76D74C"
-                    className="flex-1"
-                  />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {[
+                    { name: 'Ocean Blue', primary: '#3b82f6', secondary: '#e0f2fe', background: '#0f172a' },
+                    { name: 'Forest Green', primary: '#10b981', secondary: '#d1fae5', background: '#064e3b' },
+                    { name: 'Sunset Orange', primary: '#f59e0b', secondary: '#fef3c7', background: '#78350f' },
+                    { name: 'Royal Purple', primary: '#8b5cf6', secondary: '#ede9fe', background: '#1e1b4b' },
+                    { name: 'Crimson Red', primary: '#ef4444', secondary: '#fee2e2', background: '#7f1d1d' },
+                    { name: 'Sky Blue', primary: '#06b6d4', secondary: '#cffafe', background: '#164e63' },
+                    { name: 'Emerald', primary: '#14b8a6', secondary: '#ccfbf1', background: '#134e4a' },
+                    { name: 'Amber', primary: '#fbbf24', secondary: '#fef3c7', background: '#78350f' },
+                  ].map((theme) => (
+                    <button
+                      key={theme.name}
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          primaryColor: theme.primary,
+                          secondaryColor: theme.secondary,
+                          backgroundColor: theme.background,
+                        })
+                        toast.showSuccess(`Applied ${theme.name} theme!`)
+                      }}
+                      className="group relative p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-1 h-8">
+                          <div 
+                            className="flex-1 rounded-lg" 
+                            style={{ backgroundColor: theme.primary }}
+                          ></div>
+                          <div 
+                            className="flex-1 rounded-lg" 
+                            style={{ backgroundColor: theme.secondary }}
+                          ></div>
+                          <div 
+                            className="flex-1 rounded-lg" 
+                            style={{ backgroundColor: theme.background }}
+                          ></div>
+                        </div>
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center group-hover:text-gray-900 dark:group-hover:text-white">
+                          {theme.name}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Secondary Color (Text)
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={formData.secondaryColor}
-                    onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                    className="w-20 h-10 cursor-pointer"
-                  />
-                  <Input
-                    value={formData.secondaryColor}
-                    onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                    placeholder="#1e293b"
-                    className="flex-1"
-                  />
+              {/* Custom Color Pickers */}
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Primary Color (Buttons & Accents)
+                  </label>
+                  <div className="flex gap-3 items-center">
+                    <div className="relative">
+                      <Input
+                        type="color"
+                        value={formData.primaryColor}
+                        onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
+                        className="w-16 h-16 cursor-pointer rounded-xl border-2 border-gray-300 dark:border-gray-600"
+                        style={{ padding: '2px' }}
+                      />
+                    </div>
+                    <Input
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
+                      placeholder="#76D74C"
+                      className="flex-1 font-mono"
+                    />
+                    <div 
+                      className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md"
+                      style={{ backgroundColor: formData.primaryColor }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Secondary Color (Text & Icons)
+                  </label>
+                  <div className="flex gap-3 items-center">
+                    <div className="relative">
+                      <Input
+                        type="color"
+                        value={formData.secondaryColor}
+                        onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
+                        className="w-16 h-16 cursor-pointer rounded-xl border-2 border-gray-300 dark:border-gray-600"
+                        style={{ padding: '2px' }}
+                      />
+                    </div>
+                    <Input
+                      value={formData.secondaryColor}
+                      onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
+                      placeholder="#e7e8e9"
+                      className="flex-1 font-mono"
+                    />
+                    <div 
+                      className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md"
+                      style={{ backgroundColor: formData.secondaryColor }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Background Color (Portal Background)
+                  </label>
+                  <div className="flex gap-3 items-center">
+                    <div className="relative">
+                      <Input
+                        type="color"
+                        value={formData.backgroundColor}
+                        onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                        className="w-16 h-16 cursor-pointer rounded-xl border-2 border-gray-300 dark:border-gray-600"
+                        style={{ padding: '2px' }}
+                      />
+                    </div>
+                    <Input
+                      value={formData.backgroundColor}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                      placeholder="#5f7024"
+                      className="flex-1 font-mono"
+                    />
+                    <div 
+                      className="w-12 h-12 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md"
+                      style={{ backgroundColor: formData.backgroundColor }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    💡 Tip: Use dark colors for better contrast with white text
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Background Color
+              {/* Background Image Upload */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Background Image (Optional)
                 </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={formData.backgroundColor}
-                    onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                    className="w-20 h-10 cursor-pointer"
-                  />
-                  <Input
-                    value={formData.backgroundColor}
-                    onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                    placeholder="#0f172a"
-                    className="flex-1"
-                  />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  Upload an image that will tile/repeat to fill the entire portal background. Recommended: 500x500px or smaller for best tiling effect.
+                </p>
+                <div className="flex items-center gap-4">
+                  {formData.backgroundImageUrl && (
+                    <div className="relative h-24 w-24 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600">
+                      <img 
+                        src={formData.backgroundImageUrl} 
+                        alt="Background Preview" 
+                        className="object-cover w-full h-full"
+                      />
+                      <button
+                        onClick={() => setFormData({ ...formData, backgroundImageUrl: '' })}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        title="Remove background image"
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBackgroundImageUpload}
+                      className="hidden"
+                    />
+                    <Button 
+                      variant="outline" 
+                      type="button"
+                      className="border-2 border-purple-600 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:border-purple-700 dark:hover:border-purple-500 transition-all font-bold"
+                    >
+                      <UploadIcon className="h-4 w-4 mr-2" />
+                      {formData.backgroundImageUrl ? 'Change Background' : 'Upload Background Image'}
+                    </Button>
+                  </label>
+                </div>
+                {formData.backgroundImageUrl && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                    ✓ Background image will tile to fill the entire portal background
+                  </p>
+                )}
+              </div>
+
+              {/* Live Preview */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Live Preview
+                </label>
+                <div 
+                  className="rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700 shadow-lg relative overflow-hidden"
+                  style={{ 
+                    background: formData.backgroundImageUrl 
+                      ? `url(${formData.backgroundImageUrl}) repeat`
+                      : `linear-gradient(135deg, ${formData.backgroundColor} 0%, ${formData.backgroundColor}dd 50%, ${formData.backgroundColor}aa 100%)`,
+                    backgroundSize: formData.backgroundImageUrl ? 'auto' : 'cover',
+                  }}
+                >
+                  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-lg p-4 border-2 border-white/30 relative z-10">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: formData.secondaryColor || '#1e293b' }}>
+                      {formData.companyName || 'Your Company'}
+                    </h3>
+                    <button
+                      className="px-6 py-3 rounded-lg font-bold text-white shadow-lg transition-all"
+                      style={{ backgroundColor: formData.primaryColor || '#76D74C' }}
+                    >
+                      Sample Button
+                    </button>
+                    <p className="text-sm mt-3" style={{ color: formData.secondaryColor || '#1e293b' }}>
+                      This is how your portal will look
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 interface ClientPortal {
   companyName: string
   logoUrl?: string
+  backgroundImageUrl?: string
   phone1?: string
   phone2?: string
   whatsapp?: string
@@ -280,29 +281,52 @@ function PortalContent() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-start pt-6 sm:pt-8 pb-6 px-4 relative overflow-hidden"
-      style={dynamicBgStyle}
+      className="min-h-screen flex flex-col items-center justify-start pt-4 sm:pt-6 pb-6 px-4 relative overflow-hidden"
+      style={{
+        ...dynamicBgStyle,
+        background: portal.backgroundImageUrl
+          ? `url(${portal.backgroundImageUrl}) repeat`
+          : dynamicBgStyle.backgroundColor 
+            ? `linear-gradient(135deg, ${dynamicBgStyle.backgroundColor} 0%, ${dynamicBgStyle.backgroundColor}dd 50%, ${dynamicBgStyle.backgroundColor}aa 100%)`
+            : 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+        backgroundSize: portal.backgroundImageUrl ? 'auto' : 'cover',
+        backgroundAttachment: portal.backgroundImageUrl ? 'fixed' : 'scroll',
+      }}
     >
-      {/* Animated Background Elements - 2025 Design Trend */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
+      {/* Enhanced Animated Background - 2025 Design (Hidden when background image is used) */}
+      {!portal.backgroundImageUrl && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Gradient Orbs with Animation */}
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-green-400/20 via-emerald-400/15 to-transparent rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-blue-400/20 via-cyan-400/15 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-br from-purple-400/15 via-pink-400/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
+          
+          {/* Animated Grid Pattern */}
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: `linear-gradient(rgba(118, 215, 76, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(118, 215, 76, 0.3) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+            animation: 'grid-move 20s linear infinite'
+          }}></div>
+        </div>
+      )}
 
-      {/* Header Text - Modern Typography */}
-      <div className="w-full max-w-md text-center mb-4 relative z-10">
-        <h2 className="text-white text-lg sm:text-xl font-semibold mb-1 drop-shadow-lg">
+      {/* Header Text - Enhanced Typography */}
+      <div className="w-full max-w-lg text-center mb-4 sm:mb-6 relative z-10">
+        <h2 className="text-white text-xl sm:text-2xl font-bold mb-2 drop-shadow-2xl bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
           Sign in to {portal.companyName}
         </h2>
-        <p className="text-white/60 text-xs sm:text-sm font-mono">
-          {portal.companyName?.toLowerCase().replace(/\s+/g, '.') || 'pentagon.login'}
+        <p className="text-white/70 text-xs sm:text-sm font-mono tracking-wider">
+          {portal.companyName?.toLowerCase().replace(/\s+/g, '.') || 'wifi.portal'}
         </p>
       </div>
 
-      {/* Main Card - Glassmorphism Design (2025 Trend) */}
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 border border-white/20 animate-slide-up">
+      {/* Main Card - Enhanced Glassmorphism (2025 Trend) */}
+      <div className="w-full max-w-lg relative z-10">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 border-2 border-white/30 dark:border-gray-700/50 animate-slide-up overflow-hidden relative">
+          {/* Shine Effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none"></div>
+          
+          <div className="relative z-10">
           {/* Company Name - Bold Typography */}
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl font-black mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent dark:from-white dark:to-gray-300">
@@ -381,69 +405,91 @@ function PortalContent() {
             </form>
           )}
 
-          {/* Buy A Package Section - Modern Card Design */}
+          {/* Buy A Package Section - Enhanced 2025 Design */}
           {portal.showPackages && (
-            <div className="space-y-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="space-y-6 pt-6 border-t-2 border-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Buy A Package</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Choose your preferred plan</p>
+                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2 bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 dark:from-white dark:via-gray-300 dark:to-white bg-clip-text text-transparent">
+                  Buy A Package
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Choose your preferred plan</p>
               </div>
               
-              {/* Payment Methods - Modern Badge Design */}
+              {/* Payment Methods - Enhanced Badge Design */}
               {portal.showPaymentMethods && (portal.mtnMobileMoneyNumber || portal.airtelMoneyNumber) && (
-                <div className="flex items-center justify-center gap-3 mb-4 p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl">
-                  <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Pay With</span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-3 mb-5 p-4 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-800/50 dark:via-gray-700/50 dark:to-gray-800/50 rounded-2xl border-2 border-gray-200/50 dark:border-gray-600/50 shadow-lg backdrop-blur-sm">
+                  <span className="text-sm text-gray-700 dark:text-gray-300 font-bold">Pay With</span>
+                  <div className="flex items-center gap-2.5">
                     {portal.airtelMoneyNumber && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center text-white font-bold text-xs">A</div>
-                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">airtel money</span>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-xl border-2 border-red-300 dark:border-red-700 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer">
+                        <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-lg">A</div>
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">airtel money</span>
                       </div>
                     )}
                     {portal.mtnMobileMoneyNumber && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded flex items-center justify-center text-white font-bold text-xs">M</div>
-                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">MTN MoMo</span>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl border-2 border-yellow-300 dark:border-yellow-700 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer">
+                        <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-lg">M</div>
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">MTN MoMo</span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Package List - Modern Grid with Hover Effects */}
-              <div className="space-y-3">
+              {/* Package List - Enhanced 2025 Card Design */}
+              <div className="space-y-4">
                 {packages.map((pkg, index) => {
                   const displayName = formatPackageName(pkg)
                   const isSelected = selectedPackage === pkg.id
+                  const timeDisplay = pkg.timeLimit 
+                    ? (pkg.timeLimit >= 24 ? `${Math.floor(pkg.timeLimit / 24)} days` : `${pkg.timeLimit} hours`)
+                    : ''
                   
                   return (
                     <div 
                       key={pkg.id}
-                      className={`flex items-center justify-between bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border-2 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:shadow-lg ${
+                      className={`group relative flex items-center justify-between rounded-2xl p-5 border-2 transition-all duration-300 cursor-pointer transform hover:scale-[1.03] hover:shadow-2xl overflow-hidden ${
                         isSelected 
-                          ? 'border-green-500 shadow-lg shadow-green-500/20' 
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                          ? 'bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-green-900/20 dark:via-gray-800 dark:to-emerald-900/20 border-green-500 shadow-xl shadow-green-500/30' 
+                          : 'bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-750 dark:to-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 shadow-md hover:shadow-xl'
                       }`}
                       onClick={() => setSelectedPackage(pkg.id)}
+                      style={{
+                        animationDelay: `${index * 0.1}s`
+                      }}
                     >
-                      <div className="flex-1 flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          isSelected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700'
+                      {/* Shine Effect on Hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%]"></div>
+                      
+                      <div className="flex-1 flex items-center gap-4 relative z-10">
+                        {/* Icon with Enhanced Design */}
+                        <div className={`relative w-14 h-14 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                          isSelected 
+                            ? 'bg-gradient-to-br from-green-400 to-emerald-600 text-white scale-110' 
+                            : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-600 dark:text-gray-400 group-hover:scale-110'
                         }`}>
-                          <Clock className={`h-5 w-5 ${isSelected ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                          <Clock className={`h-6 w-6 ${isSelected ? 'text-white' : ''}`} />
+                          {isSelected && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+                          )}
                         </div>
-                        <div>
-                          <p className="font-bold text-gray-900 dark:text-white text-base">{displayName}</p>
-                          {pkg.timeLimit && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {pkg.timeLimit >= 24 ? `${Math.floor(pkg.timeLimit / 24)} days` : `${pkg.timeLimit} hours`}
+                        
+                        {/* Package Info */}
+                        <div className="flex-1">
+                          <p className="font-black text-lg text-gray-900 dark:text-white mb-1">{displayName}</p>
+                          {timeDisplay && (
+                            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {timeDisplay}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      
+                      {/* Price and Buy Button */}
+                      <div className="flex items-center gap-4 relative z-10">
                         <div className="text-right">
-                          <p className="font-bold text-gray-900 dark:text-white text-base">
+                          <p className="font-black text-xl text-gray-900 dark:text-white">
                             {pkg.currency} {pkg.price.toLocaleString()}
                           </p>
                         </div>
@@ -452,11 +498,13 @@ function PortalContent() {
                             e.stopPropagation()
                             handleBuyPackage(pkg)
                           }}
-                          className="px-5 py-2.5 rounded-lg font-bold text-white shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-                          style={{ backgroundColor: '#fbbf24' }}
+                          className="px-6 py-3 rounded-xl font-black text-white shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:scale-110 active:scale-95 flex items-center gap-2 border-2 border-yellow-400"
+                          style={{ 
+                            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+                          }}
                         >
-                          <span>BUY</span>
-                          <ArrowRight className="h-4 w-4" />
+                          <span className="text-sm">BUY</span>
+                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                         </Button>
                       </div>
                     </div>
@@ -466,19 +514,21 @@ function PortalContent() {
             </div>
           )}
 
-          {/* Contact Information - Modern Design */}
-          <div className="space-y-2 text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+          {/* Contact Information - Enhanced Design */}
+          <div className="space-y-3 text-center pt-6 border-t-2 border-gray-200 dark:border-gray-700">
             {(portal.phone1 || portal.phone2 || portal.whatsapp) && (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm text-gray-800 dark:text-gray-200 font-medium flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" style={{ color: dynamicPrimaryColor }} />
-                  For help Call/Whatsapp {portal.phone1 || portal.whatsapp || portal.phone2}
-                </p>
-                {portal.phone2 && portal.phone1 && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    {portal.phone2}
+              <div className="flex flex-col items-center gap-3">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-md">
+                  <MessageCircle className="h-5 w-5" style={{ color: dynamicPrimaryColor }} />
+                  <p className="text-sm text-gray-800 dark:text-gray-200 font-bold">
+                    For help Call/Whatsapp <span className="font-mono text-base" style={{ color: dynamicPrimaryColor }}>{portal.phone1 || portal.whatsapp || portal.phone2}</span>
                   </p>
+                </div>
+                {portal.phone2 && portal.phone1 && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                    <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                    <p className="text-xs text-gray-700 dark:text-gray-300 font-mono">{portal.phone2}</p>
+                  </div>
                 )}
               </div>
             )}
@@ -490,6 +540,7 @@ function PortalContent() {
               {portal.footerText}
             </p>
           )}
+          </div>
         </div>
       </div>
 
