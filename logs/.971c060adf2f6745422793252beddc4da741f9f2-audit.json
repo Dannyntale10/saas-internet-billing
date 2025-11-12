@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/media/hubolt/E8EE46E4EE46AAA0/saas-wifi-billing/logs/.971c060adf2f6745422793252beddc4da741f9f2-audit.json",
+    "files": [
+        {
+            "date": 1762943002725,
+            "name": "/media/hubolt/E8EE46E4EE46AAA0/saas-wifi-billing/logs/access-2025-11-12.log",
+            "hash": "e5cc0a5b9a717647384858625146511adf1bffa2f09cfce5f542f81a02068957"
+        }
+    ],
+    "hashType": "sha256"
+}

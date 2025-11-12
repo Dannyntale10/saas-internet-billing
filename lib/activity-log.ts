@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { NextRequest } from 'next/server'
+import { logger } from './logger'
 
 interface LogActivityParams {
   userId: string

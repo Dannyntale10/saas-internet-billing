@@ -169,12 +169,21 @@ function LoginContent() {
                 'Sign in'
               )}
             </button>
+              </div>
+
+              <div className="text-center mt-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Don't have an account?{' '}
+                  <Link href={`/auth/signup?role=${roleParam}`} className="font-medium text-brand-green hover:underline">
+                    Sign up
+                  </Link>
+                </p>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
-    </div>
-  )
-}
+        </div>
+      )
+    }
 
 export default function LoginPage() {
   return (
