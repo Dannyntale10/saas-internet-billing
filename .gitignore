@@ -37,3 +37,7 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
+
+# uploads (user-uploaded files - use cloud storage in production)
+/public/uploads/*
+!/public/uploads/.gitkeep

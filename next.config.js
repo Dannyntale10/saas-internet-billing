@@ -88,12 +88,24 @@ const nextConfig = {
               reuseExistingChunk: true,
               enforce: true,
             },
+            // Separate large libraries
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              chunks: 'all',
+              priority: 30,
+            },
           },
         },
       }
     }
 
     return config
+  },
+
+  // Experimental features for better performance
+  experimental: {
+    optimizeCss: true,
   },
 }
 

@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -45,6 +45,8 @@ export default function PortalCustomizePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingBackground, setUploadingBackground] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const toast = useToast()
@@ -116,28 +118,46 @@ export default function PortalCustomizePage() {
     }
   }
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     try {
       setSaving(true)
+      setError(null)
+      
+      // Clean up form data - convert empty strings to null
+      const cleanedData = { ...formData }
+      Object.keys(cleanedData).forEach(key => {
+        const value = cleanedData[key as keyof typeof cleanedData]
+        if (typeof value === 'string' && value === '') {
+          (cleanedData as any)[key] = null
+        }
+      })
+      
       const res = await fetch('/api/client/portal', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(cleanedData),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to save')
+        // Show detailed error message
+        const errorMsg = data.details || data.error || 'Failed to save portal settings'
+        const hint = data.hint ? `\n\n💡 ${data.hint}` : ''
+        throw new Error(errorMsg + hint)
       }
 
       toast.showSuccess('Portal settings saved successfully!')
+      setError(null)
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to save')
+      const error = err instanceof Error ? err : new Error('Failed to save portal settings')
+      setError(error)
       toast.showError(error.message)
+      console.error('Save error:', err)
     } finally {
       setSaving(false)
     }
-  }
+  }, [formData, toast])
 
   const handlePreview = () => {
     const params = new URLSearchParams()
@@ -151,13 +171,55 @@ export default function PortalCustomizePage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // In production, upload to cloud storage
-    // For now, create a data URL
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData({ ...formData, logoUrl: reader.result as string })
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.showError('Please upload an image file')
+      return
     }
-    reader.readAsDataURL(file)
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.showError('Image size should be less than 5MB')
+      return
+    }
+
+    try {
+      setUploadingLogo(true)
+      
+      // Upload file to server
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('type', 'logo')
+      
+      // Include old file path to delete it
+      if (formData.logoUrl && !formData.logoUrl.startsWith('data:')) {
+        uploadFormData.append('oldFilePath', formData.logoUrl)
+      }
+
+      const res = await fetch('/api/client/portal/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload logo')
+      }
+
+      // Update form data with the file URL
+      setFormData({ ...formData, logoUrl: data.url })
+      toast.showSuccess('Logo uploaded successfully!')
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to upload logo')
+      toast.showError(error.message)
+      console.error('Logo upload error:', err)
+    } finally {
+      setUploadingLogo(false)
+      // Reset the input so the same file can be uploaded again if needed
+      const input = document.getElementById('logo-upload') as HTMLInputElement
+      if (input) input.value = ''
+    }
   }
 
   const handleBackgroundImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,14 +238,43 @@ export default function PortalCustomizePage() {
       return
     }
 
-    // In production, upload to cloud storage
-    // For now, create a data URL
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData({ ...formData, backgroundImageUrl: reader.result as string })
+    try {
+      setUploadingBackground(true)
+      
+      // Upload file to server
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('type', 'background')
+      
+      // Include old file path to delete it
+      if (formData.backgroundImageUrl && !formData.backgroundImageUrl.startsWith('data:')) {
+        uploadFormData.append('oldFilePath', formData.backgroundImageUrl)
+      }
+
+      const res = await fetch('/api/client/portal/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload background image')
+      }
+
+      // Update form data with the file URL
+      setFormData({ ...formData, backgroundImageUrl: data.url })
       toast.showSuccess('Background image uploaded! It will tile to fill the entire background.')
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to upload background image')
+      toast.showError(error.message)
+      console.error('Background upload error:', err)
+    } finally {
+      setUploadingBackground(false)
+      // Reset the input so the same file can be uploaded again if needed
+      const input = document.getElementById('background-upload') as HTMLInputElement
+      if (input) input.value = ''
     }
-    reader.readAsDataURL(file)
   }
 
   if (status === 'loading' || loading) {
@@ -266,8 +357,9 @@ export default function PortalCustomizePage() {
                       <img src={formData.logoUrl} alt="Logo" className="object-contain w-full h-full" />
                     </div>
                   )}
-                  <label className="cursor-pointer">
+                  <div className="relative">
                     <input
+                      id="logo-upload"
                       type="file"
                       accept="image/*"
                       onChange={handleLogoUpload}
@@ -276,12 +368,23 @@ export default function PortalCustomizePage() {
                     <Button 
                       variant="outline" 
                       type="button"
-                      className="border-2 border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-700 dark:hover:border-blue-500 transition-all font-bold"
+                      disabled={uploadingLogo}
+                      className="border-2 border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-700 dark:hover:border-blue-500 transition-all font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (!uploadingLogo) {
+                          const input = document.getElementById('logo-upload') as HTMLInputElement
+                          if (input) {
+                            input.click()
+                          }
+                        }
+                      }}
                     >
-                      <UploadIcon className="h-4 w-4 mr-2" />
-                      Upload Logo
+                      <UploadIcon className={`h-4 w-4 mr-2 ${uploadingLogo ? 'animate-spin' : ''}`} />
+                      {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
                     </Button>
-                  </label>
+                  </div>
                 </div>
               </div>
 
@@ -559,7 +662,7 @@ export default function PortalCustomizePage() {
                   </label>
                   <div className="flex gap-3 items-center">
                     <div className="relative">
-                      <Input
+                      <input
                         type="color"
                         value={formData.primaryColor}
                         onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
@@ -586,7 +689,7 @@ export default function PortalCustomizePage() {
                   </label>
                   <div className="flex gap-3 items-center">
                     <div className="relative">
-                      <Input
+                      <input
                         type="color"
                         value={formData.secondaryColor}
                         onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
@@ -613,7 +716,7 @@ export default function PortalCustomizePage() {
                   </label>
                   <div className="flex gap-3 items-center">
                     <div className="relative">
-                      <Input
+                      <input
                         type="color"
                         value={formData.backgroundColor}
                         onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
@@ -665,8 +768,9 @@ export default function PortalCustomizePage() {
                       </button>
                     </div>
                   )}
-                  <label className="cursor-pointer">
+                  <div className="relative">
                     <input
+                      id="background-upload"
                       type="file"
                       accept="image/*"
                       onChange={handleBackgroundImageUpload}
@@ -675,12 +779,27 @@ export default function PortalCustomizePage() {
                     <Button 
                       variant="outline" 
                       type="button"
-                      className="border-2 border-purple-600 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:border-purple-700 dark:hover:border-purple-500 transition-all font-bold"
+                      disabled={uploadingBackground}
+                      className="border-2 border-purple-600 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:border-purple-700 dark:hover:border-purple-500 transition-all font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (!uploadingBackground) {
+                          const input = document.getElementById('background-upload') as HTMLInputElement
+                          if (input) {
+                            input.click()
+                          }
+                        }
+                      }}
                     >
-                      <UploadIcon className="h-4 w-4 mr-2" />
-                      {formData.backgroundImageUrl ? 'Change Background' : 'Upload Background Image'}
+                      <UploadIcon className={`h-4 w-4 mr-2 ${uploadingBackground ? 'animate-spin' : ''}`} />
+                      {uploadingBackground 
+                        ? 'Uploading...' 
+                        : formData.backgroundImageUrl 
+                          ? 'Change Background' 
+                          : 'Upload Background Image'}
                     </Button>
-                  </label>
+                  </div>
                 </div>
                 {formData.backgroundImageUrl && (
                   <p className="text-xs text-green-600 dark:text-green-400 mt-2">
