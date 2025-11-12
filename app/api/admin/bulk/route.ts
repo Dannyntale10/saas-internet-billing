@@ -86,15 +86,15 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    await logActivity(
-      auth.user.id,
-      'bulk_action',
-      entity,
-      null,
-      `Bulk ${action} on ${entity}: ${result.success} items`,
-      { action, entity, ids, result },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'bulk_action',
+      entityType: entity,
+      entityId: null,
+      description: `Bulk ${action} on ${entity}: ${result.success} items`,
+      metadata: { action, entity, ids, result },
+      request,
+    })
 
     return NextResponse.json(result)
   } catch (error: any) {

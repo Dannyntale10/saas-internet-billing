@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyPassword, generateToken, createSession } from '@/lib/auth'
+import { verifyPassword, generateToken } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,9 +42,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate token
-    const token = generateToken(user.id)
-    await createSession(user.id, token)
+    // Generate token (NextAuth handles sessions automatically)
+    const token = await generateToken(user.id, user.email, user.role)
+    // Session is handled by NextAuth - createSession is for legacy compatibility
+    // await createSession(user.id, token)
 
     return NextResponse.json({
       success: true,

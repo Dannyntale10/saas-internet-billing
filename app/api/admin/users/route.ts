@@ -35,9 +35,7 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         role: true,
-        permissions: true,
         isActive: true,
-        lastLogin: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, password, name, role, permissions, isActive } = body
+    const { email, password, name, role, isActive } = body
 
     if (!email || !password) {
       return NextResponse.json(
@@ -81,20 +79,19 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name: name?.trim() || null,
         role: role || 'client',
-        permissions: permissions ? JSON.stringify(permissions) : null,
         isActive: isActive !== undefined ? isActive : true,
       },
     })
 
-    await logActivity(
-      auth.user.id,
-      'create_user',
-      'User',
-      user.id,
-      `Created user: ${user.email}`,
-      { userId: user.id, email: user.email, role: user.role },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'create_user',
+      entityType: 'User',
+      entityId: user.id,
+      description: `Created user: ${user.email}`,
+      metadata: { userId: user.id, email: user.email, role: user.role },
+      request,
+    })
 
     return NextResponse.json(
       {
@@ -102,7 +99,6 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
-        permissions: user.permissions,
         isActive: user.isActive,
       },
       { status: 201 }

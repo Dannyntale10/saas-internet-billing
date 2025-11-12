@@ -1,16 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/middleware'
-import { logActivity } from '@/lib/activity-log'
-import crypto from 'crypto'
-
-function generateApiKey(): string {
-  return `sk_${crypto.randomBytes(32).toString('hex')}`
-}
-
-function generateApiSecret(): string {
-  return crypto.randomBytes(64).toString('hex')
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,16 +11,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const isActive = searchParams.get('isActive')
-
-    const where: any = {}
-    if (userId) where.userId = userId
-    if (isActive !== null) where.isActive = isActive === 'true'
-
-    // API Key model not in schema - return empty array for now
-    // TODO: Add ApiKey model to schema if needed
+    // ApiKey model not in schema - return empty array
     return NextResponse.json([])
   } catch (error) {
     console.error('Error fetching API keys:', error)
@@ -52,19 +32,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { userId, name, permissions, expiresAt, isActive } = body
-
-    if (!userId || !name) {
-      return NextResponse.json(
-        { error: 'User ID and name are required' },
-        { status: 400 }
-      )
-    }
-
-    // API Key model not in schema - return error
+    // ApiKey model not in schema
     return NextResponse.json(
-      { error: 'API Key feature not available. Please add ApiKey model to schema.' },
+      { error: 'API key management not available. ApiKey model is not in the current schema.' },
       { status: 501 }
     )
   } catch (error: any) {
@@ -75,4 +45,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

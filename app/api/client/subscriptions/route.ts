@@ -14,14 +14,6 @@ export async function GET(request: NextRequest) {
 
     const subscriptions = await prisma.subscription.findMany({
       where: { userId: auth.user.id },
-      include: {
-        package: true,
-        client: { select: { id: true, name: true } },
-        transactions: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
-      },
       orderBy: { createdAt: 'desc' },
     })
 

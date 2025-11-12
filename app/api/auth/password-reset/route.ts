@@ -83,7 +83,6 @@ export async function PUT(request: NextRequest) {
     // Find password reset record
     const resetRecord = await prisma.passwordReset.findUnique({
       where: { token },
-      include: { user: true },
     })
 
     if (!resetRecord) {
@@ -93,7 +92,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    if (resetRecord.usedAt) {
+    if (resetRecord.used) {
       return NextResponse.json(
         { error: 'Reset token has already been used' },
         { status: 400 }
@@ -117,7 +116,7 @@ export async function PUT(request: NextRequest) {
     // Mark reset token as used
     await prisma.passwordReset.update({
       where: { id: resetRecord.id },
-      data: { usedAt: new Date() },
+      data: { used: true },
     })
 
     return NextResponse.json({

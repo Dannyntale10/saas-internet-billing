@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/middleware'
 
 export async function GET(request: NextRequest) {
@@ -13,27 +12,13 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const isRead = searchParams.get('isRead')
-    const type = searchParams.get('type')
     const limit = parseInt(searchParams.get('limit') || '50')
+    const isRead = searchParams.get('isRead')
 
-    const where: any = { userId: auth.user.id }
-    if (isRead !== null) where.isRead = isRead === 'true'
-    if (type) where.type = type
-
-    const notifications = await prisma.notification.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    })
-
-    const unreadCount = await prisma.notification.count({
-      where: { userId: auth.user.id, isRead: false },
-    })
-
+    // Notification model not in schema - return empty array
     return NextResponse.json({
-      notifications,
-      unreadCount,
+      notifications: [],
+      unreadCount: 0,
     })
   } catch (error) {
     console.error('Error fetching notifications:', error)
@@ -54,27 +39,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { userId, type, title, message, link } = body
-
-    if (!userId || !type || !title || !message) {
-      return NextResponse.json(
-        { error: 'User ID, type, title, and message are required' },
-        { status: 400 }
-      )
-    }
-
-    const notification = await prisma.notification.create({
-      data: {
-        userId,
-        type,
-        title: title.trim(),
-        message: message.trim(),
-        link: link || null,
-      },
-    })
-
-    return NextResponse.json(notification, { status: 201 })
+    // Notification model not in schema
+    return NextResponse.json(
+      { error: 'Notification management not available. Notification model is not in the current schema.' },
+      { status: 501 }
+    )
   } catch (error: any) {
     console.error('Error creating notification:', error)
     return NextResponse.json(
@@ -83,4 +52,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

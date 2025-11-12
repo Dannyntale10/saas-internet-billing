@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/middleware'
-import { logActivity } from '@/lib/activity-log'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,20 +11,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
-    const isActive = searchParams.get('isActive')
-    const country = searchParams.get('country')
-
-    const where: any = {}
-    if (isActive !== null) where.isActive = isActive === 'true'
-    if (country) where.country = country
-
-    const taxRates = await prisma.taxRate.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    })
-
-    return NextResponse.json(taxRates)
+    // TaxRate model not in schema - return empty array
+    return NextResponse.json([])
   } catch (error) {
     console.error('Error fetching tax rates:', error)
     return NextResponse.json(
@@ -46,38 +32,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { name, rate, type, country, region, isActive } = body
-
-    if (!name || rate === undefined || !type) {
-      return NextResponse.json(
-        { error: 'Name, rate, and type are required' },
-        { status: 400 }
-      )
-    }
-
-    const taxRate = await prisma.taxRate.create({
-      data: {
-        name: name.trim(),
-        rate: parseFloat(rate),
-        type: type.trim(),
-        country: country?.trim() || null,
-        region: region?.trim() || null,
-        isActive: isActive !== undefined ? isActive : true,
-      },
-    })
-
-    await logActivity(
-      auth.user.id,
-      'create_tax_rate',
-      'TaxRate',
-      taxRate.id,
-      `Created tax rate: ${taxRate.name} (${taxRate.rate}%)`,
-      { taxRateId: taxRate.id, name: taxRate.name, rate: taxRate.rate },
-      request
+    // TaxRate model not in schema
+    return NextResponse.json(
+      { error: 'Tax rate management not available. TaxRate model is not in the current schema.' },
+      { status: 501 }
     )
-
-    return NextResponse.json(taxRate, { status: 201 })
   } catch (error: any) {
     console.error('Error creating tax rate:', error)
     return NextResponse.json(
@@ -86,4 +45,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

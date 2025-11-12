@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/middleware'
-import { logActivity } from '@/lib/activity-log'
 
-export async function PUT(
+export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -16,24 +14,15 @@ export async function PUT(
       )
     }
 
-    const body = await request.json()
-    const { name, permissions, isActive, expiresAt } = body
-
-    const updateData: any = {}
-    if (name !== undefined) updateData.name = name.trim()
-    if (permissions !== undefined) updateData.permissions = permissions ? JSON.stringify(permissions) : null
-    if (isActive !== undefined) updateData.isActive = isActive
-    if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? new Date(expiresAt) : null
-
-    // API Key model not in schema
+    // ApiKey model not in schema
     return NextResponse.json(
-      { error: 'API Key feature not available' },
-      { status: 501 }
+      { error: 'API key not found. ApiKey model is not in the current schema.' },
+      { status: 404 }
     )
-  } catch (error: any) {
-    console.error('Error updating API key:', error)
+  } catch (error) {
+    console.error('Error fetching API key:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to update API key' },
+      { error: 'Failed to fetch API key' },
       { status: 500 }
     )
   }
@@ -52,9 +41,9 @@ export async function DELETE(
       )
     }
 
-    // API Key model not in schema
+    // ApiKey model not in schema
     return NextResponse.json(
-      { error: 'API Key feature not available' },
+      { error: 'API key management not available' },
       { status: 501 }
     )
   } catch (error) {
@@ -65,4 +54,3 @@ export async function DELETE(
     )
   }
 }
-

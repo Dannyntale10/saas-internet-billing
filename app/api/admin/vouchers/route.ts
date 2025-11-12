@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     }
 
     const vouchers = await prisma.voucher.findMany({
-      include: { package: true },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        payment: { select: { id: true, status: true, amount: true } },
+      },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(vouchers)
@@ -37,11 +40,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { code, packageId, expiresAt } = await request.json()
+    const { code, name, clientId, price, dataLimit, timeLimit, speedLimit, validUntil } = await request.json()
 
-    if (!code || !packageId) {
+    if (!code || !clientId || price === undefined) {
       return NextResponse.json(
-        { error: 'Code and package ID are required' },
+        { error: 'Code, client ID, and price are required' },
         { status: 400 }
       )
     }
@@ -49,22 +52,29 @@ export async function POST(request: NextRequest) {
     const voucher = await prisma.voucher.create({
       data: {
         code: code.toUpperCase(),
-        packageId,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        name: name || null,
+        clientId,
+        price: parseFloat(price),
+        dataLimit: dataLimit ? parseFloat(dataLimit) : null,
+        timeLimit: timeLimit ? parseInt(timeLimit) : null,
+        speedLimit: speedLimit ? parseInt(speedLimit) : null,
+        validUntil: validUntil ? new Date(validUntil) : null,
       },
-      include: { package: true },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+      },
     })
 
     // Log activity
-    await logActivity(
-      auth.user.id,
-      'create_voucher',
-      'Voucher',
-      voucher.id,
-      `Created voucher: ${voucher.code}`,
-      { voucherId: voucher.id, code: voucher.code, packageId },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'create_voucher',
+      entityType: 'Voucher',
+      entityId: voucher.id,
+      description: `Created voucher: ${voucher.code}`,
+      metadata: { voucherId: voucher.id, code: voucher.code, clientId },
+      request,
+    })
 
     return NextResponse.json(voucher, { status: 201 })
   } catch (error: any) {

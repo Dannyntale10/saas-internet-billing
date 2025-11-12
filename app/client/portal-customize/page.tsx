@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
 import { useToast } from '@/hooks/useToast'
-import { Save, Upload, Eye, Facebook, Twitter, Instagram, Linkedin, Globe, Phone, Mail, MessageCircle } from 'lucide-react'
+import { Save, Upload as UploadIcon, Eye, Facebook, Twitter, Instagram, Linkedin, Globe, Phone, Mail, MessageCircle, CreditCard } from 'lucide-react'
 
 interface PortalData {
   companyName: string
@@ -35,6 +35,8 @@ interface PortalData {
   backgroundColor?: string
   footerText?: string
   showPoweredBy: boolean
+  mtnMobileMoneyNumber?: string
+  airtelMoneyNumber?: string
 }
 
 export default function PortalCustomizePage() {
@@ -69,6 +71,8 @@ export default function PortalCustomizePage() {
     backgroundColor: '#0f172a',
     footerText: 'Powered by JENDA MOBILITY',
     showPoweredBy: true,
+    mtnMobileMoneyNumber: '',
+    airtelMoneyNumber: '',
   })
 
   useEffect(() => {
@@ -218,11 +222,9 @@ export default function PortalCustomizePage() {
                       onChange={handleLogoUpload}
                       className="hidden"
                     />
-                    <Button variant="outline" type="button" asChild>
-                      <span>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Logo
-                      </span>
+                    <Button variant="outline" type="button">
+                      <UploadIcon className="h-4 w-4 mr-2" />
+                      Upload Logo
                     </Button>
                   </label>
                 </div>
@@ -292,6 +294,58 @@ export default function PortalCustomizePage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="info@company.com"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* MTN Mobile Money Payment Number */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                MTN Mobile Money Payment Number
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">Add your MTN Mobile Money number to receive payments from customers</p>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  MTN Mobile Money Number
+                </label>
+                <Input
+                  value={formData.mtnMobileMoneyNumber || ''}
+                  onChange={(e) => setFormData({ ...formData, mtnMobileMoneyNumber: e.target.value })}
+                  placeholder="+256702772200"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  This number will receive MTN Mobile Money payments from your customers when they purchase vouchers or packages.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Airtel Money Payment Number */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Airtel Money Payment Number
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">Add your Airtel Money number to receive payments from customers</p>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Airtel Money Number
+                </label>
+                <Input
+                  value={formData.airtelMoneyNumber || ''}
+                  onChange={(e) => setFormData({ ...formData, airtelMoneyNumber: e.target.value })}
+                  placeholder="+256753908001"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  This number will receive Airtel Money payments from your customers when they purchase vouchers or packages.
+                </p>
               </div>
             </CardContent>
           </Card>

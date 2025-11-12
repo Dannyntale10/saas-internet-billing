@@ -14,34 +14,23 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
-    const clientId = searchParams.get('clientId')
-    const transactionId = searchParams.get('transactionId')
+    const voucherId = searchParams.get('voucherId')
     const from = searchParams.get('from')
     const to = searchParams.get('to')
     const limit = parseInt(searchParams.get('limit') || '100')
 
     const where: any = {}
     if (userId) where.userId = userId
-    if (clientId) where.clientId = clientId
-    if (transactionId) where.transactionId = transactionId
+    if (voucherId) where.voucherId = voucherId
     if (from || to) {
-      where.startTime = {}
-      if (from) where.startTime.gte = new Date(from)
-      if (to) where.startTime.lte = new Date(to)
+      where.timestamp = {}
+      if (from) where.timestamp.gte = new Date(from)
+      if (to) where.timestamp.lte = new Date(to)
     }
 
     const usageLogs = await prisma.usageLog.findMany({
       where,
-      include: {
-        user: { select: { id: true, email: true, name: true } },
-        client: { select: { id: true, name: true } },
-        transaction: {
-          include: {
-            package: true,
-          },
-        },
-      },
-      orderBy: { startTime: 'desc' },
+      orderBy: { timestamp: 'desc' },
       take: limit,
     })
 
@@ -66,11 +55,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, clientId, transactionId, bytesUsed, duration, startTime, endTime, ipAddress, deviceInfo } = body
+    const { userId, voucherId, dataUsed, duration, uploadBytes, downloadBytes, ipAddress, macAddress } = body
 
-    if (!userId || !startTime) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'User ID and start time are required' },
+        { error: 'User ID is required' },
         { status: 400 }
       )
     }
@@ -78,23 +67,13 @@ export async function POST(request: NextRequest) {
     const usageLog = await prisma.usageLog.create({
       data: {
         userId,
-        clientId: clientId || null,
-        transactionId: transactionId || null,
-        bytesUsed: BigInt(bytesUsed || 0),
+        voucherId: voucherId || null,
+        dataUsed: dataUsed ? parseFloat(dataUsed) : 0,
         duration: duration || 0,
-        startTime: new Date(startTime),
-        endTime: endTime ? new Date(endTime) : null,
+        uploadBytes: uploadBytes ? String(uploadBytes) : '0',
+        downloadBytes: downloadBytes ? String(downloadBytes) : '0',
         ipAddress: ipAddress || null,
-        deviceInfo: deviceInfo || null,
-      },
-      include: {
-        user: { select: { id: true, email: true, name: true } },
-        client: { select: { id: true, name: true } },
-        transaction: {
-          include: {
-            package: true,
-          },
-        },
+        macAddress: macAddress || null,
       },
     })
 
@@ -107,4 +86,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

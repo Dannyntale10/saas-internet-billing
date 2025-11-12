@@ -40,15 +40,28 @@ model User {
   
   // Payments made by this user
   payments       Payment[]
+  
+  // Subscriptions
+  subscriptions  Subscription[]
 
   // Sessions
   sessions       Session[]
   
   // Portal customization
   portal         ClientPortal?
+  
+  // Invoices
+  invoices       Invoice[]
+  
+  // Activity logs
+  activityLogs   ActivityLog[]
+  
+  // Notifications
+  notifications  Notification[]
 
   @@index([parentClientId])
   @@index([role])
+  @@index([email])
 }
 
 model RouterConfig {
@@ -78,6 +91,7 @@ model Voucher {
   timeLimit     Int?          // in hours, null = unlimited
   speedLimit    Int?          // in Mbps, null = unlimited
   price         Float
+  currency      String        @default("UGX")
   
   // Validity
   validFrom     DateTime      @default(now())
@@ -97,6 +111,7 @@ model Voucher {
   @@index([clientId])
   @@index([code])
   @@index([status])
+  @@index([usedBy])
 }
 
 model Payment {
@@ -105,6 +120,8 @@ model Payment {
   user          User          @relation(fields: [userId], references: [id])
   voucherId     String?       @unique
   voucher       Voucher?      @relation(fields: [voucherId], references: [id])
+  invoiceId     String?
+  invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
   
   amount        Float
   currency      String        @default("UGX")
@@ -125,6 +142,7 @@ model Payment {
   @@index([userId])
   @@index([status])
   @@index([transactionId])
+  @@index([invoiceId])
 }
 
 model Session {
@@ -178,6 +196,10 @@ model ClientPortal {
   email         String?
   address       String?
   
+  // Payment Receiving Numbers
+  mtnMobileMoneyNumber String?  // MTN Mobile Money number to receive payments
+  airtelMoneyNumber    String?  // Airtel Money number to receive payments
+  
   // Social Media
   facebook      String?
   twitter       String?
@@ -208,3 +230,134 @@ model ClientPortal {
   @@index([clientId])
 }
 
+// NEW MODELS FOR PRODUCTION
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String   @unique
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  // Invoice details
+  amount        Float
+  currency      String    @default("UGX")
+  taxRate       Float     @default(0)
+  taxAmount     Float     @default(0)
+  subtotal      Float
+  total         Float
+  
+  // Status
+  status        String    @default("draft") // draft, sent, paid, overdue, cancelled
+  
+  // Dates
+  issueDate     DateTime  @default(now())
+  dueDate       DateTime?
+  paidAt        DateTime?
+  
+  // Additional info
+  notes         String?
+  pdfPath       String?
+  
+  // Relations
+  payments      Payment[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  // Subscription details
+  name          String
+  price         Float
+  currency      String    @default("UGX")
+  billingCycle  String    // monthly, yearly, weekly, daily
+  
+  // Package details
+  dataLimit     Float?    // in GB
+  timeLimit     Int?      // in hours
+  speedLimit    Int?      // in Mbps
+  
+  // Status
+  status        String    @default("active") // active, cancelled, expired, suspended
+  
+  // Dates
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+  nextBillingDate DateTime?
+  cancelledAt   DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([nextBillingDate])
+}
+
+model ActivityLog {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  // Activity details
+  action        String    // create, update, delete, login, etc.
+  entityType    String    // User, Voucher, Payment, etc.
+  entityId      String?
+  description   String
+  metadata      String?   // JSON string for additional data
+  
+  // Request info
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  // Notification details
+  type          String    // info, success, warning, error
+  title         String
+  message       String
+  link          String?
+  
+  // Status
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model PasswordReset {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  token         String    @unique
+  expiresAt     DateTime
+  used          Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
+}

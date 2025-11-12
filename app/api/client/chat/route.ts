@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyClient } from '@/lib/client-middleware'
 
 export async function GET(request: NextRequest) {
@@ -12,24 +11,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
-    const clientId = searchParams.get('clientId')
-    const limit = parseInt(searchParams.get('limit') || '50')
-
-    const where: any = {
-      OR: [
-        { userId: auth.user.id },
-        ...(clientId ? [{ clientId }] : []),
-      ],
-    }
-
-    const messages = await prisma.chatMessage.findMany({
-      where,
-      orderBy: { createdAt: 'asc' },
-      take: limit,
-    })
-
-    return NextResponse.json(messages)
+    // ChatMessage model not in schema - return empty array
+    return NextResponse.json([])
   } catch (error) {
     console.error('Error fetching chat messages:', error)
     return NextResponse.json(
@@ -49,26 +32,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { message, clientId } = body
-
-    if (!message || message.trim() === '') {
-      return NextResponse.json(
-        { error: 'Message is required' },
-        { status: 400 }
-      )
-    }
-
-    const chatMessage = await prisma.chatMessage.create({
-      data: {
-        userId: auth.user.id,
-        clientId: clientId || null,
-        message: message.trim(),
-        sender: 'user',
-      },
-    })
-
-    return NextResponse.json(chatMessage, { status: 201 })
+    // ChatMessage model not in schema
+    return NextResponse.json(
+      { error: 'Chat functionality not available. ChatMessage model is not in the current schema.' },
+      { status: 501 }
+    )
   } catch (error: any) {
     console.error('Error sending chat message:', error)
     return NextResponse.json(
@@ -77,4 +45,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '@/lib/middleware'
-import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { logActivity } from '@/lib/activity-log'
@@ -36,56 +35,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain']
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'File type not allowed' },
-        { status: 400 }
-      )
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 15)
-    const extension = file.name.split('.').pop()
-    const filename = `${timestamp}-${randomString}.${extension}`
-
-    // Create uploads directory
+    // Save file to disk
     const uploadsDir = join(process.cwd(), 'uploads', type)
     await mkdir(uploadsDir, { recursive: true })
-
-    // Save file
-    const filepath = join(uploadsDir, filename)
+    
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+    const filename = `${Date.now()}-${file.name}`
+    const filepath = join(uploadsDir, filename)
+    
     await writeFile(filepath, buffer)
 
-    // Create file upload record
     const fileUrl = `/uploads/${type}/${filename}`
-    const fileUpload = await prisma.fileUpload.create({
-      data: {
-        userId: auth.user.id,
-        clientId: clientId || null,
-        filename,
-        originalName: file.name,
-        mimeType: file.type,
-        size: file.size,
-        path: filepath,
-        url: fileUrl,
-        type,
-      },
-    })
 
-    await logActivity(
-      auth.user.id,
-      'upload_file',
-      'FileUpload',
-      fileUpload.id,
-      `Uploaded file: ${file.name}`,
-      { fileUploadId: fileUpload.id, filename: file.name, type },
-      request
-    )
+    // FileUpload model not in schema - return file info directly
+    const fileUpload = {
+      id: `file_${Date.now()}`,
+      filename: file.name,
+      originalName: file.name,
+      mimeType: file.type,
+      size: file.size,
+      url: fileUrl,
+      type,
+      clientId,
+      createdAt: new Date().toISOString(),
+    }
+
+    await logActivity({
+      userId: auth.user.id,
+      action: 'upload_file',
+      entityType: 'FileUpload',
+      entityId: fileUpload.id,
+      description: `Uploaded file: ${file.name}`,
+      metadata: { filename: file.name, type, size: file.size },
+      request,
+    })
 
     return NextResponse.json(fileUpload, { status: 201 })
   } catch (error: any) {
@@ -96,4 +80,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

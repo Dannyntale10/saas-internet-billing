@@ -24,9 +24,7 @@ export async function GET(
         email: true,
         name: true,
         role: true,
-        permissions: true,
         isActive: true,
-        lastLogin: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -63,13 +61,12 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { email, password, name, role, permissions, isActive } = body
+    const { email, password, name, role, isActive } = body
 
     const updateData: any = {}
     if (email !== undefined) updateData.email = email.trim()
     if (name !== undefined) updateData.name = name?.trim() || null
     if (role !== undefined) updateData.role = role
-    if (permissions !== undefined) updateData.permissions = permissions ? JSON.stringify(permissions) : null
     if (isActive !== undefined) updateData.isActive = isActive
     if (password) updateData.password = await hashPassword(password)
 
@@ -78,22 +75,21 @@ export async function PUT(
       data: updateData,
     })
 
-    await logActivity(
-      auth.user.id,
-      'update_user',
-      'User',
-      user.id,
-      `Updated user: ${user.email}`,
-      { userId: user.id, changes: updateData },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'update_user',
+      entityType: 'User',
+      entityId: user.id,
+      description: `Updated user: ${user.email}`,
+      metadata: { userId: user.id, changes: updateData },
+      request,
+    })
 
     return NextResponse.json({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
-      permissions: user.permissions,
       isActive: user.isActive,
     })
   } catch (error: any) {
@@ -146,15 +142,15 @@ export async function DELETE(
       where: { id: params.id },
     })
 
-    await logActivity(
-      auth.user.id,
-      'delete_user',
-      'User',
-      params.id,
-      `Deleted user: ${user.email}`,
-      { userId: params.id, email: user.email },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'delete_user',
+      entityType: 'User',
+      entityId: params.id,
+      description: `Deleted user: ${user.email}`,
+      metadata: { userId: params.id, email: user.email },
+      request,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

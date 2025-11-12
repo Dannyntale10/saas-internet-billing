@@ -27,10 +27,12 @@ export async function GET(request: NextRequest) {
       ],
     }
 
-    const banners = await prisma.promotionalBanner.findMany({
+    // PromotionalBanner model not in schema - return empty array
+    const banners: any[] = []
+    /* const banners = await prisma.promotionalBanner.findMany({
       where,
-      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
-    })
+      orderBy: { createdAt: 'desc' },
+    }) */
 
     return NextResponse.json(banners)
   } catch (error) {

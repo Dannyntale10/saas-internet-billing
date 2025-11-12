@@ -1,18 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn, useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import { Shield, Users, ArrowLeft } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const roleParam = searchParams.get('role') || 'admin' // Default to admin
   const { data: session, status } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  
+  const isAdmin = roleParam === 'admin'
+  const isClient = roleParam === 'client'
 
   // Redirect if already logged in
   useEffect(() => {
@@ -27,6 +33,18 @@ export default function LoginPage() {
       }
     }
   }, [status, session, router])
+
+  // Validate role match
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const userRole = session.user.role
+      if (isAdmin && userRole !== 'ADMIN') {
+        setError('This login is for administrators only. Please use client login.')
+      } else if (isClient && userRole !== 'CLIENT') {
+        setError('This login is for clients only. Please use admin login.')
+      }
+    }
+  }, [status, session, isAdmin, isClient])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -155,6 +173,18 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-brand-gradient">
+        <div className="text-white">Loading...</div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
 

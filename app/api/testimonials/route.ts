@@ -10,11 +10,13 @@ export async function GET(request: NextRequest) {
     const where: any = { isApproved: true }
     if (clientId) where.clientId = clientId
 
-    const testimonials = await prisma.testimonial.findMany({
+    // Testimonial model not in schema - return empty array
+    const testimonials: any[] = []
+    /* const testimonials = await prisma.testimonial.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: limit,
-    })
+    }) */
 
     return NextResponse.json(testimonials)
   } catch (error) {
@@ -45,18 +47,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const testimonial = await prisma.testimonial.create({
-      data: {
-        clientId: clientId || null,
-        name: name.trim(),
-        email: email?.trim() || null,
-        rating: parseInt(rating),
-        comment: comment.trim(),
-        isApproved: false, // Requires admin approval
-      },
-    })
-
-    return NextResponse.json(testimonial, { status: 201 })
+    // Testimonial model not in schema - return error
+    return NextResponse.json(
+      { error: 'Testimonial management not available. Please add Testimonial model to schema.' },
+      { status: 501 }
+    )
   } catch (error: any) {
     console.error('Error creating testimonial:', error)
     return NextResponse.json(

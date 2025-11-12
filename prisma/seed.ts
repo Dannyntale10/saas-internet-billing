@@ -20,35 +20,22 @@ async function main() {
 
   console.log('Created admin user:', admin.email)
 
-  // Create packages
-  const packages = [
-    { name: '6hours', duration: 6, price: 500, currency: 'UGX' },
-    { name: '24hours', duration: 24, price: 1000, currency: 'UGX' },
-    { name: 'week', duration: 168, price: 5000, currency: 'UGX' },
-    { name: 'month', duration: 720, price: 20000, currency: 'UGX' },
+  // Package model not in schema - packages are managed via vouchers
+  // Create sample vouchers directly
+  const voucherData = [
+    { code: '6HOURS-0001', name: '6 Hours', price: 500, timeLimit: 6, clientId: admin.id },
+    { code: '24HOURS-0001', name: '24 Hours', price: 1000, timeLimit: 24, clientId: admin.id },
+    { code: 'WEEK-0001', name: '1 Week', price: 5000, timeLimit: 168, clientId: admin.id },
+    { code: 'MONTH-0001', name: '1 Month', price: 20000, timeLimit: 720, clientId: admin.id },
   ]
 
-  for (const pkg of packages) {
-    const created = await prisma.package.upsert({
-      where: { name: pkg.name },
+  for (const v of voucherData) {
+    const voucher = await prisma.voucher.upsert({
+      where: { code: v.code },
       update: {},
-      create: pkg,
+      create: v,
     })
-    console.log('Created package:', created.name)
-
-    // Create sample vouchers for each package
-    for (let i = 1; i <= 3; i++) {
-      const voucherCode = `${created.name.toUpperCase()}-${i.toString().padStart(4, '0')}`
-      const voucher = await prisma.voucher.upsert({
-        where: { code: voucherCode },
-        update: {},
-        create: {
-          code: voucherCode,
-          packageId: created.id,
-        },
-      })
-      console.log('Created/Updated voucher:', voucher.code)
-    }
+    console.log('Created/Updated voucher:', voucher.code)
   }
 
   console.log('Seeding completed!')

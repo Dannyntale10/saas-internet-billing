@@ -20,9 +20,6 @@ export async function GET(
       where: { id: params.id },
       include: {
         user: { select: { id: true, email: true, name: true } },
-        package: true,
-        client: { select: { id: true, name: true } },
-        transactions: true,
       },
     })
 
@@ -57,13 +54,12 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { status, billingCycle, autoRenew, expiresAt, nextBillingDate } = body
+    const { status, billingCycle, endDate, nextBillingDate } = body
 
     const updateData: any = {}
     if (status !== undefined) updateData.status = status
     if (billingCycle !== undefined) updateData.billingCycle = billingCycle
-    if (autoRenew !== undefined) updateData.autoRenew = autoRenew
-    if (expiresAt !== undefined) updateData.expiresAt = new Date(expiresAt)
+    if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null
     if (nextBillingDate !== undefined) updateData.nextBillingDate = nextBillingDate ? new Date(nextBillingDate) : null
 
     const subscription = await prisma.subscription.update({
@@ -71,20 +67,18 @@ export async function PUT(
       data: updateData,
       include: {
         user: { select: { id: true, email: true, name: true } },
-        package: true,
-        client: { select: { id: true, name: true } },
       },
     })
 
-    await logActivity(
-      auth.user.id,
-      'update_subscription',
-      'Subscription',
-      subscription.id,
-      `Updated subscription: ${subscription.id}`,
-      { subscriptionId: subscription.id, changes: updateData },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'update_subscription',
+      entityType: 'Subscription',
+      entityId: subscription.id,
+      description: `Updated subscription: ${subscription.id}`,
+      metadata: { subscriptionId: subscription.id, changes: updateData },
+      request,
+    })
 
     return NextResponse.json(subscription)
   } catch (error: any) {
@@ -124,15 +118,15 @@ export async function DELETE(
       where: { id: params.id },
     })
 
-    await logActivity(
-      auth.user.id,
-      'delete_subscription',
-      'Subscription',
-      params.id,
-      `Deleted subscription: ${params.id}`,
-      { subscriptionId: params.id },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'delete_subscription',
+      entityType: 'Subscription',
+      entityId: params.id,
+      description: `Deleted subscription: ${params.id}`,
+      metadata: { subscriptionId: params.id },
+      request,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -143,4 +137,3 @@ export async function DELETE(
     )
   }
 }
-

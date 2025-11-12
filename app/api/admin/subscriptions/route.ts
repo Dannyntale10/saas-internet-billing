@@ -15,20 +15,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
-    const clientId = searchParams.get('clientId')
     const userId = searchParams.get('userId')
 
     const where: any = {}
     if (status) where.status = status
-    if (clientId) where.clientId = clientId
     if (userId) where.userId = userId
 
     const subscriptions = await prisma.subscription.findMany({
       where,
       include: {
         user: { select: { id: true, email: true, name: true } },
-        package: true,
-        client: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -54,11 +50,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, packageId, clientId, billingCycle, autoRenew, startsAt, expiresAt } = body
+    const { userId, name, price, currency, billingCycle, dataLimit, timeLimit, speedLimit, startDate, endDate } = body
 
-    if (!userId || !packageId || !startsAt || !expiresAt) {
+    if (!userId || !name || price === undefined || !startDate) {
       return NextResponse.json(
-        { error: 'User, package, start date, and expiry date are required' },
+        { error: 'User, name, price, and start date are required' },
         { status: 400 }
       )
     }
@@ -66,31 +62,32 @@ export async function POST(request: NextRequest) {
     const subscription = await prisma.subscription.create({
       data: {
         userId,
-        packageId,
-        clientId: clientId || null,
-        status: 'active',
+        name,
+        price: parseFloat(price),
+        currency: currency || 'UGX',
         billingCycle: billingCycle || 'monthly',
-        autoRenew: autoRenew !== undefined ? autoRenew : true,
-        startsAt: new Date(startsAt),
-        expiresAt: new Date(expiresAt),
-        nextBillingDate: billingCycle === 'monthly' ? new Date(new Date(startsAt).setMonth(new Date(startsAt).getMonth() + 1)) : null,
+        dataLimit: dataLimit ? parseFloat(dataLimit) : null,
+        timeLimit: timeLimit ? parseInt(timeLimit) : null,
+        speedLimit: speedLimit ? parseInt(speedLimit) : null,
+        status: 'active',
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
+        nextBillingDate: billingCycle === 'monthly' && endDate ? new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1)) : null,
       },
       include: {
         user: { select: { id: true, email: true, name: true } },
-        package: true,
-        client: { select: { id: true, name: true } },
       },
     })
 
-    await logActivity(
-      auth.user.id,
-      'create_subscription',
-      'Subscription',
-      subscription.id,
-      `Created subscription for user: ${subscription.user.email}`,
-      { subscriptionId: subscription.id, userId, packageId },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'create_subscription',
+      entityType: 'Subscription',
+      entityId: subscription.id,
+      description: `Created subscription for user: ${subscription.user.email}`,
+      metadata: { subscriptionId: subscription.id, userId, name },
+      request,
+    })
 
     return NextResponse.json(subscription, { status: 201 })
   } catch (error: any) {
@@ -101,4 +98,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

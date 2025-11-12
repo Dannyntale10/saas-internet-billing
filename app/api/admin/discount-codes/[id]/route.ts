@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/middleware'
-import { logActivity } from '@/lib/activity-log'
 
 export async function GET(
   request: NextRequest,
@@ -16,9 +14,9 @@ export async function GET(
       )
     }
 
-    // DiscountCode model not in schema - return error
+    // DiscountCode model not in schema
     return NextResponse.json(
-      { error: 'Discount code not found. Discount codes are not available in the current schema.' },
+      { error: 'Discount code not found. DiscountCode model is not in the current schema.' },
       { status: 404 }
     )
   } catch (error) {
@@ -43,20 +41,6 @@ export async function PUT(
       )
     }
 
-    const body = await request.json()
-    const { code, type, value, minAmount, maxDiscount, usageLimit, isActive, startsAt, expiresAt } = body
-
-    const updateData: any = {}
-    if (code !== undefined) updateData.code = code.trim().toUpperCase()
-    if (type !== undefined) updateData.type = type
-    if (value !== undefined) updateData.value = parseFloat(value)
-    if (minAmount !== undefined) updateData.minAmount = minAmount ? parseFloat(minAmount) : null
-    if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount ? parseFloat(maxDiscount) : null
-    if (usageLimit !== undefined) updateData.usageLimit = usageLimit ? parseInt(usageLimit) : null
-    if (isActive !== undefined) updateData.isActive = isActive
-    if (startsAt !== undefined) updateData.startsAt = startsAt ? new Date(startsAt) : null
-    if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? new Date(expiresAt) : null
-
     // DiscountCode model not in schema
     return NextResponse.json(
       { error: 'Discount code management not available' },
@@ -64,12 +48,6 @@ export async function PUT(
     )
   } catch (error: any) {
     console.error('Error updating discount code:', error)
-    if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'Discount code already exists' },
-        { status: 400 }
-      )
-    }
     return NextResponse.json(
       { error: error.message || 'Failed to update discount code' },
       { status: 500 }
@@ -103,4 +81,3 @@ export async function DELETE(
     )
   }
 }
-

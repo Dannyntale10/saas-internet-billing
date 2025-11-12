@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/middleware'
 
 export async function PUT(
@@ -15,23 +14,11 @@ export async function PUT(
       )
     }
 
-    const body = await request.json()
-    const { isRead } = body
-
-    const updateData: any = {}
-    if (isRead !== undefined) {
-      updateData.isRead = isRead
-      if (isRead) {
-        updateData.readAt = new Date()
-      }
-    }
-
-    const notification = await prisma.notification.update({
-      where: { id: params.id },
-      data: updateData,
-    })
-
-    return NextResponse.json(notification)
+    // Notification model not in schema
+    return NextResponse.json(
+      { error: 'Notification management not available' },
+      { status: 501 }
+    )
   } catch (error: any) {
     console.error('Error updating notification:', error)
     return NextResponse.json(
@@ -54,11 +41,11 @@ export async function DELETE(
       )
     }
 
-    await prisma.notification.delete({
-      where: { id: params.id },
-    })
-
-    return NextResponse.json({ success: true })
+    // Notification model not in schema
+    return NextResponse.json(
+      { error: 'Notification management not available' },
+      { status: 501 }
+    )
   } catch (error) {
     console.error('Error deleting notification:', error)
     return NextResponse.json(
@@ -67,4 +54,3 @@ export async function DELETE(
     )
   }
 }
-

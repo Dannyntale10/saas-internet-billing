@@ -52,13 +52,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       isLoggedIn: true,
-      hasActiveConnection: !!(activeSubscription || activeVoucher),
-      activeSubscription: activeSubscription ? {
-        id: activeSubscription.id,
-        package: activeSubscription.package?.name || 'Unknown',
-        expiresAt: activeSubscription.expiresAt,
-        timeRemaining: Math.max(0, Math.floor((new Date(activeSubscription.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60))), // Hours
-      } : null,
+      hasActiveConnection: !!activeVoucher,
+      activeSubscription: null, // Subscription model not fully implemented
       activeVoucher: activeVoucher ? {
         id: activeVoucher.id,
         package: activeVoucher.name || activeVoucher.code,

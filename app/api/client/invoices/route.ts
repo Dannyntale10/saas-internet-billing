@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { verifyClient } from '@/lib/client-middleware'
 
 export async function GET(request: NextRequest) {
@@ -16,22 +15,35 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const where: any = { userId: auth.user.id }
-    if (status) where.status = status
-
-    const invoices = await prisma.invoice.findMany({
-      where,
+    // Invoice model not in schema - return payments as invoices
+    const payments = await require('@/lib/prisma').prisma.payment.findMany({
+      where: {
+        userId: auth.user.id,
+        ...(status ? { status: status.toUpperCase() } : {}),
+      },
       include: {
-        client: { select: { id: true, name: true } },
-        transactions: {
-          include: {
-            package: true,
-          },
-        },
+        voucher: { select: { name: true, code: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
     })
+
+    // Transform payments to invoice-like format
+    const invoices = payments.map((payment: any, index: number) => ({
+      id: payment.id,
+      invoiceNumber: `INV-${payment.id.slice(0, 8).toUpperCase()}`,
+      userId: payment.userId,
+      amount: payment.amount,
+      currency: payment.currency,
+      status: payment.status === 'COMPLETED' ? 'paid' : payment.status === 'PENDING' ? 'pending' : 'unpaid',
+      dueDate: payment.completedAt || payment.createdAt,
+      createdAt: payment.createdAt,
+      items: payment.voucher ? [{
+        description: payment.voucher.name || payment.voucher.code,
+        quantity: 1,
+        price: payment.amount,
+      }] : [],
+    }))
 
     return NextResponse.json(invoices)
   } catch (error) {
@@ -42,4 +54,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

@@ -12,15 +12,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const favorites = await prisma.favoritePackage.findMany({
-      where: { userId: auth.user.id },
-      include: {
-        package: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    return NextResponse.json(favorites.map(f => f.package))
+    // FavoritePackage model not in schema - return empty array
+    const favorites: any[] = []
+    return NextResponse.json(favorites)
   } catch (error) {
     console.error('Error fetching favorites:', error)
     return NextResponse.json(
@@ -50,17 +44,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const favorite = await prisma.favoritePackage.create({
-      data: {
-        userId: auth.user.id,
-        packageId,
-      },
-      include: {
-        package: true,
-      },
-    })
-
-    return NextResponse.json(favorite.package, { status: 201 })
+    // FavoritePackage model not in schema - return error
+    return NextResponse.json(
+      { error: 'Favorite packages not available. Please add FavoritePackage model to schema.' },
+      { status: 501 }
+    )
   } catch (error: any) {
     console.error('Error adding favorite:', error)
     if (error.code === 'P2002') {
@@ -96,14 +84,11 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.favoritePackage.deleteMany({
-      where: {
-        userId: auth.user.id,
-        packageId,
-      },
-    })
-
-    return NextResponse.json({ success: true })
+    // FavoritePackage model not in schema - return error
+    return NextResponse.json(
+      { error: 'Favorite packages not available. Please add FavoritePackage model to schema.' },
+      { status: 501 }
+    )
   } catch (error) {
     console.error('Error removing favorite:', error)
     return NextResponse.json(

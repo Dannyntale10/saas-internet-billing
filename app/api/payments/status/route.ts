@@ -4,7 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { MTNMobileMoney } from '@/lib/payments/mtn'
 import { AirtelMoney } from '@/lib/payments/airtel'
-import { PaymentStatus } from '@prisma/client'
+// PaymentStatus enum not in schema - using string literals
+type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
 
 export async function GET(req: NextRequest) {
   try {

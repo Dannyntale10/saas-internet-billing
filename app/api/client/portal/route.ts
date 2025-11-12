@@ -68,6 +68,8 @@ export async function PUT(request: NextRequest) {
         backgroundColor: body.backgroundColor,
         footerText: body.footerText,
         showPoweredBy: body.showPoweredBy,
+        mtnMobileMoneyNumber: body.mtnMobileMoneyNumber,
+        airtelMoneyNumber: body.airtelMoneyNumber,
       },
       create: {
         clientId,
@@ -93,6 +95,8 @@ export async function PUT(request: NextRequest) {
         backgroundColor: body.backgroundColor || '#0f172a',
         footerText: body.footerText || 'Powered by JENDA MOBILITY',
         showPoweredBy: body.showPoweredBy ?? true,
+        mtnMobileMoneyNumber: body.mtnMobileMoneyNumber,
+        airtelMoneyNumber: body.airtelMoneyNumber,
       },
     })
 

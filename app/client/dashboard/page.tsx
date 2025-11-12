@@ -7,7 +7,7 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Users, Ticket, CreditCard, Activity, ArrowUpRight, Plus, Router } from 'lucide-react'
 import Link from 'next/link'
-import { LoadingSpinner, LoadingCard } from '@/components/LoadingSpinner'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api-client'
 

@@ -81,15 +81,15 @@ export async function PUT(
     })
 
     // Log activity
-    await logActivity(
-      auth.user.id,
-      'update_client',
-      'Client',
-      client.id,
-      `Updated client: ${client.name}`,
-      { clientId: client.id, changes: updateData },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'update_client',
+      entityType: 'Client',
+      entityId: client.id,
+      description: `Updated client: ${client.name}`,
+      metadata: { clientId: client.id, changes: updateData },
+      request,
+    })
 
     return NextResponse.json(client)
   } catch (error) {
@@ -130,15 +130,15 @@ export async function DELETE(
     })
 
     // Log activity
-    await logActivity(
-      auth.user.id,
-      'delete_client',
-      'Client',
-      params.id,
-      `Deleted client: ${client.name}`,
-      { clientId: params.id, name: client.name },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'delete_client',
+      entityType: 'Client',
+      entityId: params.id,
+      description: `Deleted client: ${client.name}`,
+      metadata: { clientId: params.id, name: client.name },
+      request,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

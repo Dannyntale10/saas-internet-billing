@@ -62,15 +62,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Log activity
-    await logActivity(
-      auth.user.id,
-      'bulk_generate_vouchers',
-      'Voucher',
-      null,
-      `Generated ${count} vouchers based on template`,
-      { templateId: packageId, count, prefix },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'bulk_generate_vouchers',
+      entityType: 'Voucher',
+      entityId: null,
+      description: `Generated ${count} vouchers based on template`,
+      metadata: { templateId: packageId, count, prefix },
+      request,
+    })
 
     return NextResponse.json({ success: true, count: vouchers.length, vouchers }, { status: 201 })
   } catch (error: any) {

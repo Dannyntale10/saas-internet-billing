@@ -86,15 +86,15 @@ export async function POST(request: NextRequest) {
     })
 
     // Log activity
-    await logActivity(
-      auth.user.id,
-      'create_client',
-      'Client',
-      client.id,
-      `Created client: ${client.name}`,
-      { clientId: client.id, name: client.name },
-      request
-    )
+    await logActivity({
+      userId: auth.user.id,
+      action: 'create_client',
+      entityType: 'Client',
+      entityId: client.id,
+      description: `Created client: ${client.name}`,
+      metadata: { clientId: client.id, name: client.name },
+      request,
+    })
 
     return NextResponse.json(client, { status: 201 })
   } catch (error: any) {
