@@ -19,9 +19,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || (session.user.role !== 'CLIENT' && session.user.role !== 'ADMIN')) {
+    // Only CLIENT users can create vouchers (not admins)
+    if (!session || session.user.role !== 'CLIENT') {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized. Only clients can create vouchers.' },
         { status: 401 }
       )
     }
@@ -50,9 +51,8 @@ export async function POST(req: NextRequest) {
 
     const data = voucherSchema.parse(cleanedBody)
 
-    const clientId = session.user.role === 'ADMIN' 
-      ? (body.clientId || session.user.id)
-      : session.user.id
+    // Client ID is always the logged-in client's ID
+    const clientId = session.user.id
 
     // Generate vouchers
     const vouchers = []
