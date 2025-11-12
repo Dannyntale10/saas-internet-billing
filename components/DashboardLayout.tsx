@@ -68,8 +68,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Modern Navigation with Mobile Support */}
       <nav className="bg-brand-gradient border-b border-white/10 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 sm:h-20">
+        <div className="max-w-[95%] xl:max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex justify-between items-center h-16 sm:h-18 lg:h-20 py-2">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link 
@@ -77,44 +77,77 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 className="flex items-center space-x-2 group"
               >
                 <Logo size="sm" className="text-white transition-transform group-hover:scale-105" />
-                <span className="hidden sm:block text-white font-bold text-lg">JENDA MOBILITY</span>
+                <span className="hidden sm:block text-white font-bold text-base lg:text-lg">JENDA MOBILITY</span>
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex lg:items-center lg:space-x-1">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      'inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                      isActive
-                        ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm'
-                        : 'text-white/80 hover:bg-white/10 hover:text-white'
-                    )}
-                  >
-                    <Icon className="mr-2 h-4 w-4" />
-                    {item.name}
-                  </Link>
-                )
-              })}
+            <div className="hidden lg:flex lg:flex-col lg:gap-1 lg:flex-1 lg:max-w-none lg:ml-4">
+              {/* Top Row */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        'inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                        isActive
+                          ? 'bg-white/25 text-white shadow-md backdrop-blur-sm border border-white/40'
+                          : 'text-white/90 hover:bg-white/15 hover:text-white border border-transparent hover:border-white/25'
+                      )}
+                      style={{
+                        color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.9)',
+                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <Icon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0 text-white" />
+                      <span>{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+              {/* Bottom Row */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        'inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                        isActive
+                          ? 'bg-white/25 text-white shadow-md backdrop-blur-sm border border-white/40'
+                          : 'text-white/90 hover:bg-white/15 hover:text-white border border-transparent hover:border-white/25'
+                      )}
+                      style={{
+                        color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.9)',
+                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <Icon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0 text-white" />
+                      <span>{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
 
             {/* User Menu & Mobile Toggle */}
             <div className="flex items-center space-x-2 sm:space-x-4">
               {/* User Info - Hidden on mobile */}
-              <div className="hidden sm:flex items-center space-x-3">
+              <div className="hidden sm:flex items-center space-x-2 lg:space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-white">{session?.user?.name}</p>
-                  <p className="text-xs text-white/80">{role}</p>
+                  <p className="text-xs lg:text-sm font-semibold text-white truncate max-w-[100px]">{session?.user?.name || 'Admin User'}</p>
+                  <p className="text-xs text-white/90 font-medium">{role}</p>
                 </div>
-                <div className="h-8 w-8 rounded-full bg-brand-green/20 flex items-center justify-center border border-white/20">
-                  <span className="text-xs font-bold text-white">
-                    {session?.user?.name?.charAt(0).toUpperCase()}
+                <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-brand-green/20 flex items-center justify-center border-2 border-white/30 flex-shrink-0">
+                  <span className="text-xs lg:text-sm font-bold text-white">
+                    {session?.user?.name?.charAt(0).toUpperCase() || 'A'}
                   </span>
                 </div>
               </div>
@@ -135,9 +168,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               {/* Desktop Sign Out */}
               <button
                 onClick={() => signOut()}
-                className="hidden lg:inline-flex items-center px-4 py-2 border border-white/30 text-sm font-medium rounded-lg text-white hover:bg-white/10 focus:outline-none transition-all duration-200 backdrop-blur-sm"
+                className="hidden lg:inline-flex items-center px-3 py-1.5 border border-white/30 text-xs font-medium rounded-md text-white hover:bg-white/10 focus:outline-none transition-all duration-200 backdrop-blur-sm"
               >
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="h-3.5 w-3.5 mr-1.5" />
                 Sign out
               </button>
             </div>
@@ -156,14 +189,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        'flex items-center px-4 py-3 rounded-lg text-base font-medium transition-all duration-200',
+                        'flex items-center px-4 py-3 rounded-lg text-base font-semibold transition-all duration-200',
                         isActive
-                          ? 'bg-white/20 text-white'
-                          : 'text-white/80 hover:bg-white/10 hover:text-white'
+                          ? 'bg-white/20 text-white border border-white/30'
+                          : 'text-white hover:bg-white/10 hover:text-white border border-transparent hover:border-white/20'
                       )}
+                      style={{
+                        color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.9)',
+                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                      }}
                     >
-                      <Icon className="mr-3 h-5 w-5" />
-                      {item.name}
+                      <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                      <span className="font-medium">{item.name}</span>
                     </Link>
                   )
                 })}
@@ -172,10 +209,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     setMobileMenuOpen(false)
                     signOut()
                   }}
-                  className="w-full flex items-center px-4 py-3 rounded-lg text-base font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+                  className="w-full flex items-center px-4 py-3 rounded-lg text-base font-semibold text-white hover:bg-white/10 hover:text-white transition-all duration-200 border border-transparent hover:border-white/20"
+                  style={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                  }}
                 >
-                  <LogOut className="mr-3 h-5 w-5" />
-                  Sign out
+                  <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-white" />
+                  <span className="font-medium">Sign out</span>
                 </button>
               </div>
             </div>

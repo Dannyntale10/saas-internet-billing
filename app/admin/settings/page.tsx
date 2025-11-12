@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
 import { useToast } from '@/hooks/useToast'
+import { Facebook, Twitter, Instagram, Linkedin, Youtube, MessageCircle, Globe } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -26,6 +28,15 @@ export default function SettingsPage() {
     companyPhone: '+256702772200',
     supportEmail: 'support@jenda.com',
     supportPhone: '+256702772200',
+  })
+  const [socialMedia, setSocialMedia] = useState({
+    facebook: '',
+    twitter: '',
+    instagram: '',
+    linkedin: '',
+    youtube: '',
+    whatsapp: '',
+    website: '',
   })
 
   useEffect(() => {
@@ -45,6 +56,26 @@ export default function SettingsPage() {
         console.error('Error loading settings:', e)
       }
     }
+
+    // Load social media handles
+    const savedSocialMedia = localStorage.getItem('adminSocialMedia')
+    if (savedSocialMedia) {
+      try {
+        setSocialMedia(JSON.parse(savedSocialMedia))
+      } catch (e) {
+        console.error('Error loading social media:', e)
+      }
+    } else {
+      // Try to fetch from API
+      fetch('/api/admin/social-media')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.socialMedia) {
+            setSocialMedia(data.socialMedia)
+          }
+        })
+        .catch(err => console.error('Error fetching social media:', err))
+    }
   }, [session, status, router])
 
   const handleSave = async (e: React.FormEvent) => {
@@ -54,10 +85,24 @@ export default function SettingsPage() {
     try {
       // Save to localStorage (in production, save to database via API)
       localStorage.setItem('adminSettings', JSON.stringify(settings))
+      
+      // Save social media handles
+      const response = await fetch('/api/admin/social-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(socialMedia),
+      })
+      
+      if (response.ok) {
+        localStorage.setItem('adminSocialMedia', JSON.stringify(socialMedia))
+      }
+      
       toast.showSuccess('Settings saved successfully!')
+      toast.success('Settings saved successfully!')
     } catch (error) {
       console.error('Error saving settings:', error)
       toast.showError('Failed to save settings')
+      toast.error('Failed to save settings')
     } finally {
       setSaving(false)
     }
@@ -205,6 +250,105 @@ export default function SettingsPage() {
                     <Input
                       value={settings.supportPhone}
                       onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Social Media Handles</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Add your social media links to display on the home page
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Facebook className="h-4 w-4 text-blue-600" />
+                      Facebook URL
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder="https://facebook.com/yourpage"
+                      value={socialMedia.facebook}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, facebook: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Twitter className="h-4 w-4 text-blue-400" />
+                      Twitter/X URL
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder="https://twitter.com/yourhandle"
+                      value={socialMedia.twitter}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, twitter: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Instagram className="h-4 w-4 text-pink-600" />
+                      Instagram URL
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder="https://instagram.com/yourhandle"
+                      value={socialMedia.instagram}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, instagram: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Linkedin className="h-4 w-4 text-blue-700" />
+                      LinkedIn URL
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder="https://linkedin.com/company/yourcompany"
+                      value={socialMedia.linkedin}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, linkedin: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Youtube className="h-4 w-4 text-red-600" />
+                      YouTube URL
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder="https://youtube.com/@yourchannel"
+                      value={socialMedia.youtube}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, youtube: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-green-600" />
+                      WhatsApp Number
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="+256702772200"
+                      value={socialMedia.whatsapp}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, whatsapp: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-gray-600" />
+                      Website URL
+                    </label>
+                    <Input
+                      type="url"
+                      placeholder="https://yourwebsite.com"
+                      value={socialMedia.website}
+                      onChange={(e) => setSocialMedia({ ...socialMedia, website: e.target.value })}
                     />
                   </div>
                 </div>
