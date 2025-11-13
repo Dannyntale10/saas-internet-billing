@@ -82,17 +82,8 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Invalid email or password')
           }
 
-          // Check if role matches the expected role from credentials (if provided)
-          // This is a secondary check - the main role validation happens in the login page
-          const expectedRole = credentials.role // Can be passed from login page
-          if (expectedRole) {
-            const userRole = user.role.toUpperCase()
-            const expectedRoleUpper = expectedRole.toUpperCase()
-            if (userRole !== expectedRoleUpper) {
-              console.error(`❌ Role mismatch: User is ${userRole}, expected ${expectedRoleUpper}`)
-              throw new Error(`Access denied. This account is for ${userRole} access.`)
-            }
-          }
+          // Note: Role validation is handled by the login page after successful authentication
+          // We don't block login here based on role - let the login page handle role-based redirects
 
           console.log(`✅ Successful login: ${user.email} (${user.role})`)
 
@@ -141,7 +132,10 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || (() => {
+    console.warn('⚠️  NEXTAUTH_SECRET is not set! Authentication may not work properly.')
+    return 'fallback-secret-change-in-production'
+  })(),
   debug: process.env.NODE_ENV === 'development',
 }
 
