@@ -1,0 +1,14 @@
+[Unit]
+Description=FreeRADIUS + CoovaChilli Hotspot Gateway
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/start-hotspot-services.sh
+ExecStop=/usr/local/bin/stop-hotspot-services.sh
+
+[Install]
+WantedBy=multi-user.target
+

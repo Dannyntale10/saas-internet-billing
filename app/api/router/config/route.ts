@@ -6,11 +6,15 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
 const configSchema = z.object({
+  routerType: z.enum(['MIKROTIK', 'FREERADIUS']).optional(),
   host: z.string().min(1),
   port: z.number().int().positive(),
-  username: z.string().min(1),
-  password: z.string().min(1),
+  username: z.string().min(1).optional(),
+  password: z.string().min(1).optional(),
   apiPort: z.number().int().positive().optional(),
+  radiusSecret: z.string().optional(),
+  nasId: z.string().optional(),
+  apiUrl: z.string().url().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -36,6 +40,7 @@ export async function GET(req: NextRequest) {
       config: {
         ...config,
         password: undefined, // Never return password
+        radiusSecret: undefined, // Never return secret
       }
     })
   } catch (error) {
@@ -61,28 +66,54 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = configSchema.parse(body)
 
-    // Encrypt password
-    const encryptedPassword = await bcrypt.hash(data.password, 10)
+    const routerType = data.routerType || 'MIKROTIK'
+    
+    // Prepare update/create data
+    const configData: any = {
+      routerType,
+      host: data.host,
+      port: data.port,
+      apiPort: data.apiPort || data.port,
+      isActive: true,
+    }
+
+    // MikroTik specific fields
+    if (routerType === 'MIKROTIK') {
+      if (!data.username || !data.password) {
+        return NextResponse.json(
+          { error: 'Username and password are required for MikroTik' },
+          { status: 400 }
+        )
+      }
+      const encryptedPassword = await bcrypt.hash(data.password, 10)
+      configData.username = data.username
+      configData.password = encryptedPassword
+    }
+
+    // FreeRADIUS specific fields
+    if (routerType === 'FREERADIUS') {
+      if (!data.radiusSecret || !data.nasId || !data.apiUrl) {
+        return NextResponse.json(
+          { error: 'RADIUS secret, NAS ID, and API URL are required for FreeRADIUS' },
+          { status: 400 }
+        )
+      }
+      const encryptedSecret = await bcrypt.hash(data.radiusSecret, 10)
+      configData.radiusSecret = encryptedSecret
+      configData.nasId = data.nasId
+      configData.apiUrl = data.apiUrl
+      // Store placeholder values for compatibility
+      configData.username = data.nasId
+      configData.password = encryptedSecret
+    }
 
     // Upsert configuration
     const config = await prisma.routerConfig.upsert({
       where: { userId: session.user.id },
-      update: {
-        host: data.host,
-        port: data.port,
-        username: data.username,
-        password: encryptedPassword,
-        apiPort: data.apiPort || data.port,
-        isActive: true,
-      },
+      update: configData,
       create: {
         userId: session.user.id,
-        host: data.host,
-        port: data.port,
-        username: data.username,
-        password: encryptedPassword,
-        apiPort: data.apiPort || data.port,
-        isActive: true,
+        ...configData,
       }
     })
 

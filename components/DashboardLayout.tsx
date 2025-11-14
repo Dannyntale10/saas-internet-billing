@@ -21,6 +21,8 @@ import {
 import { cn } from '@/lib/utils'
 import Logo from '@/components/Logo'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { NotificationCenter } from '@/components/NotificationCenter'
+import { GlobalSearch } from '@/components/GlobalSearch'
 
 interface NavItem {
   name: string
@@ -46,6 +48,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: 'Transactions', href: '/admin/transactions', icon: CreditCard },
     { name: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
     { name: 'Invoices', href: '/admin/invoices', icon: CreditCard },
+    { name: 'Analytics', href: '/admin/analytics', icon: Activity },
+    { name: 'Activity', href: '/admin/activity', icon: Activity },
     { name: 'Reports', href: '/admin/reports', icon: Activity },
     { name: 'Activity Logs', href: '/admin/activity-logs', icon: Activity },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
@@ -179,6 +183,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
             {/* User Menu & Mobile Toggle */}
             <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Global Search */}
+              <div className="hidden md:block">
+                <GlobalSearch />
+              </div>
+
+              {/* Notification Center */}
+              <NotificationCenter userId={session?.user?.id} />
+
               {/* Theme Toggle */}
               <ThemeToggle />
 

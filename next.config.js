@@ -106,6 +106,7 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     optimizeCss: true,
+    instrumentationHook: true, // Enable instrumentation for service startup
   },
 }
 

@@ -68,11 +68,16 @@ model RouterConfig {
   id            String   @id @default(cuid())
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routerType    String   @default("MIKROTIK") // MIKROTIK, FREERADIUS
   host          String
   port          Int      @default(8728)
   username      String
   password      String   // Encrypted
   apiPort       Int      @default(8728)
+  // FreeRADIUS specific fields
+  radiusSecret  String?  // RADIUS shared secret
+  nasId         String?  // NAS Identifier for FreeRADIUS
+  apiUrl        String?  // SaaS API URL for FreeRADIUS
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
